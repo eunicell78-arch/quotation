@@ -480,14 +480,22 @@
             const actualMargin = (totalSellingPrice - totalCost - totalFreight) / totalSellingPrice;
             const actualMarginPercent = (actualMargin * 100).toFixed(2);
 
+            // Calculate sum of allocated freight for verification
+            const totalAllocatedFreight = results.reduce((sum, r) => sum + r.freight, 0);
+            
+            // Verification tolerances
+            const FREIGHT_TOLERANCE = 1; // Allow 1 won difference due to rounding
+            const MARGIN_TOLERANCE = 0.0001; // Allow 0.01% margin difference
+            
             // Display summary
             const summary = document.getElementById(summaryId);
             summary.innerHTML = `
                 <p><strong>총 원가:</strong> ${formatNumber(totalCost)}원</p>
                 <p><strong>총 운임:</strong> ${formatNumber(totalFreight)}원</p>
+                <p><strong>배분된 운임 합계:</strong> ${formatNumber(totalAllocatedFreight)}원 (검증: ${Math.abs(totalAllocatedFreight - totalFreight) < FREIGHT_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
                 <p><strong>총 판매가:</strong> ${formatNumber(totalSellingPrice)}원</p>
                 <p><strong>희망 마진율:</strong> ${(targetMarginRate * 100).toFixed(2)}%</p>
-                <p><strong>실제 마진율:</strong> ${actualMarginPercent}%</p>
+                <p><strong>실제 마진율:</strong> ${actualMarginPercent}% (검증: ${Math.abs(actualMargin - targetMarginRate) < MARGIN_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
             `;
         }
     </script>
