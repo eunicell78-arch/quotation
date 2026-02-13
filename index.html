@@ -260,15 +260,15 @@
                 <h2>기본 설정</h2>
                 <div class="global-params">
                     <div class="input-group">
-                        <label for="totalFreight">총 예상 운임 (원)</label>
+                        <label for="totalFreight">총 예상 운임(원)</label>
                         <input type="number" id="totalFreight" value="1000000" min="0">
                     </div>
                     <div class="input-group">
-                        <label for="marginRate">희망 마진율 (%)</label>
+                        <label for="marginRate">희망 마진율(%)</label>
                         <input type="number" id="marginRate" value="20" min="0" max="100" step="0.1">
                     </div>
                     <div class="input-group">
-                        <label for="exchangeRate">적용 환율 (원/$)</label>
+                        <label for="exchangeRate">적용 환율(원/$)</label>
                         <input type="number" id="exchangeRate" value="1300" min="0" step="0.01">
                     </div>
                 </div>
@@ -283,7 +283,7 @@
                             <input type="text" class="product-name" value="품목 1">
                         </div>
                         <div class="input-group">
-                            <label>단가 ($)</label>
+                            <label>단가($)</label>
                             <input type="number" class="product-price" value="100" min="0" step="0.01">
                         </div>
                         <div class="input-group">
@@ -356,7 +356,7 @@
                     <input type="text" class="product-name" value="품목 ${productIndex + 1}">
                 </div>
                 <div class="input-group">
-                    <label>단가 ($)</label>
+                    <label>단가($)</label>
                     <input type="number" class="product-price" value="100" min="0" step="0.01">
                 </div>
                 <div class="input-group">
@@ -483,9 +483,9 @@
             // Display summary
             const summary = document.getElementById(summaryId);
             summary.innerHTML = `
-                <p><strong>총 원가:</strong> ${formatNumber(totalCost)} 원</p>
-                <p><strong>총 운임:</strong> ${formatNumber(totalFreight)} 원</p>
-                <p><strong>총 판매가:</strong> ${formatNumber(totalSellingPrice)} 원</p>
+                <p><strong>총 원가:</strong> ${formatNumber(totalCost)}원</p>
+                <p><strong>총 운임:</strong> ${formatNumber(totalFreight)}원</p>
+                <p><strong>총 판매가:</strong> ${formatNumber(totalSellingPrice)}원</p>
                 <p><strong>희망 마진율:</strong> ${(targetMarginRate * 100).toFixed(2)}%</p>
                 <p><strong>실제 마진율:</strong> ${actualMarginPercent}%</p>
             `;
