@@ -308,9 +308,10 @@
                             <tr>
                                 <th>품명</th>
                                 <th>수량</th>
-                                <th>원가(원)</th>
-                                <th>배분 운임(원)</th>
+                                <th>구입단가(원)</th>
+                                <th>배분운임단가(원)</th>
                                 <th>판매단가(원)</th>
+                                <th>판매이익단가(원)</th>
                                 <th>총 판매가(원)</th>
                             </tr>
                         </thead>
@@ -326,9 +327,10 @@
                             <tr>
                                 <th>품명</th>
                                 <th>수량</th>
-                                <th>원가(원)</th>
-                                <th>배분 운임(원)</th>
+                                <th>구입단가(원)</th>
+                                <th>배분운임단가(원)</th>
                                 <th>판매단가(원)</th>
+                                <th>판매이익단가(원)</th>
                                 <th>총 판매가(원)</th>
                             </tr>
                         </thead>
@@ -404,7 +406,8 @@
                     name: name,
                     priceUSD: price,
                     quantity: quantity,
-                    costKRW: price * exchangeRate * quantity
+                    purchaseUnitPrice: price * exchangeRate,  // 구입단가 (단가로 저장)
+                    costKRW: price * exchangeRate * quantity  // 총 원가 (계산용)
                 });
             });
 
@@ -419,27 +422,35 @@
             // Method 1: Equal distribution
             const equalFreightPerProduct = totalFreight / products.length;
             const equalResults = products.map(p => {
-                const freight = equalFreightPerProduct;
+                const freight = equalFreightPerProduct;  // 총 배분운임
+                const freightUnitPrice = freight / p.quantity;  // 배분운임단가
                 const sellingPricePerUnit = (p.costKRW + freight) / (1 - marginRate) / p.quantity;
                 const totalSellingPrice = sellingPricePerUnit * p.quantity;
+                const profitUnitPrice = sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice;  // 판매이익단가
                 return {
                     ...p,
                     freight: freight,
+                    freightUnitPrice: freightUnitPrice,
                     sellingPricePerUnit: sellingPricePerUnit,
-                    totalSellingPrice: totalSellingPrice
+                    totalSellingPrice: totalSellingPrice,
+                    profitUnitPrice: profitUnitPrice
                 };
             });
 
             // Method 2: Proportional distribution
             const proportionalResults = products.map(p => {
-                const freight = totalFreight * (p.costKRW / totalCost);
+                const freight = totalFreight * (p.costKRW / totalCost);  // 총 배분운임
+                const freightUnitPrice = freight / p.quantity;  // 배분운임단가
                 const sellingPricePerUnit = (p.costKRW + freight) / (1 - marginRate) / p.quantity;
                 const totalSellingPrice = sellingPricePerUnit * p.quantity;
+                const profitUnitPrice = sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice;  // 판매이익단가
                 return {
                     ...p,
                     freight: freight,
+                    freightUnitPrice: freightUnitPrice,
                     sellingPricePerUnit: sellingPricePerUnit,
-                    totalSellingPrice: totalSellingPrice
+                    totalSellingPrice: totalSellingPrice,
+                    profitUnitPrice: profitUnitPrice
                 };
             });
 
@@ -466,9 +477,10 @@
                 row.innerHTML = `
                     <td>${result.name}</td>
                     <td>${result.quantity}</td>
-                    <td>${formatNumber(result.costKRW)}</td>
-                    <td>${formatNumber(result.freight)}</td>
+                    <td>${formatNumber(result.purchaseUnitPrice)}</td>
+                    <td>${formatNumber(result.freightUnitPrice)}</td>
                     <td>${formatNumber(result.sellingPricePerUnit)}</td>
+                    <td>${formatNumber(result.profitUnitPrice)}</td>
                     <td>${formatNumber(result.totalSellingPrice)}</td>
                 `;
                 tbody.appendChild(row);
