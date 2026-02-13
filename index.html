@@ -347,6 +347,29 @@
     <script>
         let productIndex = 1;
 
+        // Add event listeners for real-time calculation updates
+        document.addEventListener('DOMContentLoaded', function() {
+            // Listen to changes in global parameters
+            document.getElementById('totalFreight').addEventListener('input', autoCalculate);
+            document.getElementById('marginRate').addEventListener('input', autoCalculate);
+            document.getElementById('exchangeRate').addEventListener('input', autoCalculate);
+            
+            // Listen to changes in product inputs using event delegation
+            document.getElementById('productsContainer').addEventListener('input', function(e) {
+                if (e.target.matches('.product-name, .product-price, .product-quantity')) {
+                    autoCalculate();
+                }
+            });
+        });
+
+        function autoCalculate() {
+            // Only auto-calculate if results are already shown
+            const results = document.getElementById('results');
+            if (results.classList.contains('show')) {
+                calculate();
+            }
+        }
+
         function addProduct() {
             const container = document.getElementById('productsContainer');
             const newProduct = document.createElement('div');
@@ -416,21 +439,21 @@
                 return;
             }
 
-            // Calculate total cost
+            // Calculate total cost and total quantity
             const totalCost = products.reduce((sum, p) => sum + p.costKRW, 0);
+            const totalQuantity = products.reduce((sum, p) => sum + p.quantity, 0);
 
-            // Method 1: Equal distribution
-            const equalFreightPerProduct = totalFreight / products.length;
+            // Method 1: Equal distribution (균등배분) - Total Freight / Total Quantity
+            const freightUnitPrice = totalFreight / totalQuantity;  // 배분운임단가 (모든 품목에 동일)
             const equalResults = products.map(p => {
-                const freight = equalFreightPerProduct;  // 총 배분운임
-                const freightUnitPrice = freight / p.quantity;  // 배분운임단가
+                const freight = freightUnitPrice * p.quantity;  // 총 배분운임 = 배분운임단가 × 수량
                 const sellingPricePerUnit = (p.costKRW + freight) / (1 - marginRate) / p.quantity;
                 const totalSellingPrice = sellingPricePerUnit * p.quantity;
                 const profitUnitPrice = sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice;  // 판매이익단가
                 return {
                     ...p,
                     freight: freight,
-                    freightUnitPrice: freightUnitPrice,
+                    freightUnitPrice: freightUnitPrice,  // 모든 품목에 동일한 배분운임단가 적용
                     sellingPricePerUnit: sellingPricePerUnit,
                     totalSellingPrice: totalSellingPrice,
                     profitUnitPrice: profitUnitPrice
