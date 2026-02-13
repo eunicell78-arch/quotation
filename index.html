@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>품목 판매단가 자동 계산기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .global-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .products-container {
+            margin-top: 20px;
+        }
+
+        .product-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .product-item .input-group {
+            margin: 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            padding: 10px 15px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 10px 15px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-add {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn-calculate {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        .results {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-section {
+            margin-bottom: 30px;
+        }
+
+        .result-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background: #e9ecef;
+        }
+
+        .summary {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .summary p {
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+
+        .summary strong {
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .product-item {
+                grid-template-columns: 1fr;
+            }
+
+            .global-params {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.5em;
+            }
+
+            .content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>품목 판매단가 자동 계산기</h1>
+            <p>품목 원가 기반 판매단가 자동 계산 시스템</p>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <h2>기본 설정</h2>
+                <div class="global-params">
+                    <div class="input-group">
+                        <label for="totalFreight">총 예상 운임 (원)</label>
+                        <input type="number" id="totalFreight" value="1000000" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="marginRate">희망 마진율 (%)</label>
+                        <input type="number" id="marginRate" value="20" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="exchangeRate">적용 환율 (원/$)</label>
+                        <input type="number" id="exchangeRate" value="1300" min="0" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>품목 입력</h2>
+                <div class="products-container" id="productsContainer">
+                    <div class="product-item" data-index="0">
+                        <div class="input-group">
+                            <label>품명</label>
+                            <input type="text" class="product-name" value="품목 1">
+                        </div>
+                        <div class="input-group">
+                            <label>단가 ($)</label>
+                            <input type="number" class="product-price" value="100" min="0" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>수량</label>
+                            <input type="number" class="product-quantity" value="10" min="1">
+                        </div>
+                        <button class="btn btn-danger remove-product" onclick="removeProduct(0)">삭제</button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-add" onclick="addProduct()">+ 품목 추가</button>
+            </div>
+
+            <button class="btn btn-primary btn-calculate" onclick="calculate()">계산하기</button>
+
+            <div class="results" id="results">
+                <div class="section result-section">
+                    <h2>계산 결과</h2>
+                    
+                    <h3>1. 운임 균등배분 시 판매가</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>품명</th>
+                                <th>수량</th>
+                                <th>원가(원)</th>
+                                <th>배분 운임(원)</th>
+                                <th>판매단가(원)</th>
+                                <th>총 판매가(원)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equalResultsBody">
+                        </tbody>
+                    </table>
+                    <div class="summary" id="equalSummary">
+                    </div>
+
+                    <h3 style="margin-top: 40px;">2. 운임 품목금액 비례배분 시 판매가</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>품명</th>
+                                <th>수량</th>
+                                <th>원가(원)</th>
+                                <th>배분 운임(원)</th>
+                                <th>판매단가(원)</th>
+                                <th>총 판매가(원)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proportionalResultsBody">
+                        </tbody>
+                    </table>
+                    <div class="summary" id="proportionalSummary">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let productIndex = 1;
+
+        function addProduct() {
+            const container = document.getElementById('productsContainer');
+            const newProduct = document.createElement('div');
+            newProduct.className = 'product-item';
+            newProduct.setAttribute('data-index', productIndex);
+            newProduct.innerHTML = `
+                <div class="input-group">
+                    <label>품명</label>
+                    <input type="text" class="product-name" value="품목 ${productIndex + 1}">
+                </div>
+                <div class="input-group">
+                    <label>단가 ($)</label>
+                    <input type="number" class="product-price" value="100" min="0" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>수량</label>
+                    <input type="number" class="product-quantity" value="10" min="1">
+                </div>
+                <button class="btn btn-danger remove-product" onclick="removeProduct(${productIndex})">삭제</button>
+            `;
+            container.appendChild(newProduct);
+            productIndex++;
+        }
+
+        function removeProduct(index) {
+            const products = document.querySelectorAll('.product-item');
+            if (products.length > 1) {
+                const product = document.querySelector(`.product-item[data-index="${index}"]`);
+                if (product) {
+                    product.remove();
+                }
+            } else {
+                alert('최소 1개의 품목이 필요합니다.');
+            }
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ko-KR').format(Math.round(num));
+        }
+
+        function calculate() {
+            // Get global parameters
+            const totalFreight = parseFloat(document.getElementById('totalFreight').value) || 0;
+            const marginRate = parseFloat(document.getElementById('marginRate').value) / 100 || 0;
+            const exchangeRate = parseFloat(document.getElementById('exchangeRate').value) || 0;
+
+            // Get all products
+            const products = [];
+            const productItems = document.querySelectorAll('.product-item');
+            
+            productItems.forEach(item => {
+                const name = item.querySelector('.product-name').value;
+                const price = parseFloat(item.querySelector('.product-price').value) || 0;
+                const quantity = parseInt(item.querySelector('.product-quantity').value) || 0;
+                
+                products.push({
+                    name: name,
+                    priceUSD: price,
+                    quantity: quantity,
+                    costKRW: price * exchangeRate * quantity
+                });
+            });
+
+            if (products.length === 0) {
+                alert('품목을 추가해주세요.');
+                return;
+            }
+
+            // Calculate total cost
+            const totalCost = products.reduce((sum, p) => sum + p.costKRW, 0);
+
+            // Method 1: Equal distribution
+            const equalFreightPerProduct = totalFreight / products.length;
+            const equalResults = products.map(p => {
+                const freight = equalFreightPerProduct;
+                const sellingPricePerUnit = (p.costKRW + freight) / (1 - marginRate) / p.quantity;
+                const totalSellingPrice = sellingPricePerUnit * p.quantity;
+                return {
+                    ...p,
+                    freight: freight,
+                    sellingPricePerUnit: sellingPricePerUnit,
+                    totalSellingPrice: totalSellingPrice
+                };
+            });
+
+            // Method 2: Proportional distribution
+            const proportionalResults = products.map(p => {
+                const freight = totalFreight * (p.costKRW / totalCost);
+                const sellingPricePerUnit = (p.costKRW + freight) / (1 - marginRate) / p.quantity;
+                const totalSellingPrice = sellingPricePerUnit * p.quantity;
+                return {
+                    ...p,
+                    freight: freight,
+                    sellingPricePerUnit: sellingPricePerUnit,
+                    totalSellingPrice: totalSellingPrice
+                };
+            });
+
+            // Display results
+            displayResults('equal', equalResults, totalFreight, marginRate);
+            displayResults('proportional', proportionalResults, totalFreight, marginRate);
+
+            // Show results section
+            document.getElementById('results').classList.add('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayResults(method, results, totalFreight, targetMarginRate) {
+            const bodyId = method === 'equal' ? 'equalResultsBody' : 'proportionalResultsBody';
+            const summaryId = method === 'equal' ? 'equalSummary' : 'proportionalSummary';
+            
+            const tbody = document.getElementById(bodyId);
+            tbody.innerHTML = '';
+
+            let totalSellingPrice = 0;
+
+            results.forEach(result => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${result.name}</td>
+                    <td>${result.quantity}</td>
+                    <td>${formatNumber(result.costKRW)}</td>
+                    <td>${formatNumber(result.freight)}</td>
+                    <td>${formatNumber(result.sellingPricePerUnit)}</td>
+                    <td>${formatNumber(result.totalSellingPrice)}</td>
+                `;
+                tbody.appendChild(row);
+                totalSellingPrice += result.totalSellingPrice;
+            });
+
+            // Calculate actual margin
+            const totalCost = results.reduce((sum, r) => sum + r.costKRW, 0);
+            const actualMargin = (totalSellingPrice - totalCost - totalFreight) / totalSellingPrice;
+            const actualMarginPercent = (actualMargin * 100).toFixed(2);
+
+            // Display summary
+            const summary = document.getElementById(summaryId);
+            summary.innerHTML = `
+                <p><strong>총 원가:</strong> ${formatNumber(totalCost)} 원</p>
+                <p><strong>총 운임:</strong> ${formatNumber(totalFreight)} 원</p>
+                <p><strong>총 판매가:</strong> ${formatNumber(totalSellingPrice)} 원</p>
+                <p><strong>희망 마진율:</strong> ${(targetMarginRate * 100).toFixed(2)}%</p>
+                <p><strong>실제 마진율:</strong> ${actualMarginPercent}%</p>
+            `;
+        }
+    </script>
+</body>
+</html>
