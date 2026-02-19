@@ -229,6 +229,17 @@
             color: #667eea;
         }
 
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .table-wrapper table {
+            min-width: 800px;
+        }
+
         @media (max-width: 768px) {
             .product-item {
                 grid-template-columns: 1fr;
@@ -303,40 +314,44 @@
                     <h2>계산 결과</h2>
                     
                     <h3>1. 운임 균등배분 시 판매가</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>품명</th>
-                                <th>수량</th>
-                                <th>구입단가(원)</th>
-                                <th>배분운임단가(원)</th>
-                                <th>판매단가(원)</th>
-                                <th>판매이익단가(원)</th>
-                                <th>총 판매가(원)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="equalResultsBody">
-                        </tbody>
-                    </table>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>품명</th>
+                                    <th>수량</th>
+                                    <th>구입단가(원)</th>
+                                    <th>배분운임단가(원)</th>
+                                    <th>판매단가(원)</th>
+                                    <th>판매이익단가(원)</th>
+                                    <th>총 판매가(원)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="equalResultsBody">
+                            </tbody>
+                        </table>
+                    </div>
                     <div class="summary" id="equalSummary">
                     </div>
 
                     <h3 style="margin-top: 40px;">2. 운임 품목금액 비례배분 시 판매가</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>품명</th>
-                                <th>수량</th>
-                                <th>구입단가(원)</th>
-                                <th>배분운임단가(원)</th>
-                                <th>판매단가(원)</th>
-                                <th>판매이익단가(원)</th>
-                                <th>총 판매가(원)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="proportionalResultsBody">
-                        </tbody>
-                    </table>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>품명</th>
+                                    <th>수량</th>
+                                    <th>구입단가(원)</th>
+                                    <th>배분운임단가(원)</th>
+                                    <th>판매단가(원)</th>
+                                    <th>판매이익단가(원)</th>
+                                    <th>총 판매가(원)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proportionalResultsBody">
+                            </tbody>
+                        </table>
+                    </div>
                     <div class="summary" id="proportionalSummary">
                     </div>
                 </div>
