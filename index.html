@@ -254,7 +254,14 @@
             min-width: 800px;
         }
 
-        @media (max-width: 768px) {
+        .warning-message {
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
             .product-item {
                 grid-template-columns: 1fr;
             }
@@ -360,6 +367,32 @@
                         </table>
                     </div>
                     <div class="summary" id="equalSummary">
+                    </div>
+
+                    <h3 style="margin-top:30px;">운임 비례배분 시 판매가 (원가기준)</h3>
+                    <div id="propResultsContainer">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>품명</th>
+                                        <th>수량</th>
+                                        <th>구입단가(원)</th>
+                                        <th>배분운임단가(원)</th>
+                                        <th>판매단가(원)</th>
+                                        <th>총판매이익(원)</th>
+                                        <th>총 판매가(원)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="propResultsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="summary" id="propSummary">
+                        </div>
+                    </div>
+                    <div id="propResultsMessage" class="warning-message" style="display:none;">
+                        ⚠️ 원가 합계가 0이므로 비례배분을 계산할 수 없습니다. 단가 및 수량을 확인해주세요.
                     </div>
                 </div>
             </div>
@@ -532,15 +565,45 @@
                 };
             });
 
+            // 비례배분 (원가기준): 품목 원가합 = 구입단가(원) * 수량
+            const totalCostAll = products.reduce((sum, p) => sum + p.costKRW, 0);
+
+            let propResults = null;
+            if (totalCostAll > 0 && products.length > 0) {
+                // Allocate freight proportionally; adjust last item to absorb rounding error
+                const rawFreights = products.map(p => totalFreight * (p.costKRW / totalCostAll));
+                const roundedFreights = rawFreights.map(f => Math.round(f));
+                const roundingDiff = totalFreight - roundedFreights.reduce((s, f) => s + f, 0);
+                roundedFreights[roundedFreights.length - 1] += roundingDiff;
+
+                propResults = products.map((p, i) => {
+                    const freight = roundedFreights[i];
+                    const freightUnitPrice = p.quantity > 0 ? freight / p.quantity : 0;
+                    const sellingPricePerUnit = (p.quantity > 0 && (1 - marginRate) > 0)
+                        ? (p.costKRW + freight) / (1 - marginRate) / p.quantity
+                        : 0;
+                    const totalSellingPrice = sellingPricePerUnit * p.quantity;
+                    const totalProfit = (sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice) * p.quantity;
+                    return {
+                        ...p,
+                        freight: freight,
+                        freightUnitPrice: freightUnitPrice,
+                        sellingPricePerUnit: sellingPricePerUnit,
+                        totalSellingPrice: totalSellingPrice,
+                        totalProfit: totalProfit
+                    };
+                });
+            }
+
             // Display results
-            displayResults(equalResults, totalFreight, marginRate);
+            displayResults(equalResults, propResults, totalFreight, marginRate);
 
             // Show results section
             document.getElementById('results').classList.add('show');
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function displayResults(results, totalFreight, targetMarginRate) {
+        function displayResults(results, propResults, totalFreight, targetMarginRate) {
             const tbody = document.getElementById('equalResultsBody');
             tbody.innerHTML = '';
 
@@ -584,6 +647,56 @@
                 <p><strong>희망 마진율:</strong> ${(targetMarginRate * 100).toFixed(2)}%</p>
                 <p><strong>실제 마진율:</strong> ${actualMarginPercent}% (검증: ${Math.abs(actualMargin - targetMarginRate) < MARGIN_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
             `;
+
+            // Proportional allocation results
+            const propContainer = document.getElementById('propResultsContainer');
+            const propMessage = document.getElementById('propResultsMessage');
+
+            if (!propResults) {
+                propContainer.style.display = 'none';
+                propMessage.style.display = 'block';
+            } else {
+                propMessage.style.display = 'none';
+                propContainer.style.display = 'block';
+
+                const propTbody = document.getElementById('propResultsBody');
+                propTbody.innerHTML = '';
+                let propTotalSellingPrice = 0;
+
+                propResults.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${result.name}</td>
+                        <td>${result.quantity}</td>
+                        <td>${formatNumber(result.purchaseUnitPrice)}</td>
+                        <td>${formatNumber(result.freightUnitPrice)}</td>
+                        <td>${formatNumber(result.sellingPricePerUnit)}</td>
+                        <td>${formatNumber(result.totalProfit)}</td>
+                        <td>${formatNumber(result.totalSellingPrice)}</td>
+                    `;
+                    propTbody.appendChild(row);
+                    propTotalSellingPrice += result.totalSellingPrice;
+                });
+
+                const propTotalCost = propResults.reduce((sum, r) => sum + r.costKRW, 0);
+                const propActualMargin = propTotalSellingPrice > 0
+                    ? (propTotalSellingPrice - propTotalCost - totalFreight) / propTotalSellingPrice
+                    : 0;
+                const propActualMarginPercent = (propActualMargin * 100).toFixed(2);
+                const propTotalAllocated = propResults.reduce((sum, r) => sum + r.freight, 0);
+                const propTotalProfit = propResults.reduce((sum, r) => sum + r.totalProfit, 0);
+
+                const propSummary = document.getElementById('propSummary');
+                propSummary.innerHTML = `
+                    <p><strong>총 원가:</strong> ${formatNumber(propTotalCost)}원</p>
+                    <p><strong>총 운임:</strong> ${formatNumber(totalFreight)}원</p>
+                    <p><strong>배분된 운임 합계:</strong> ${formatNumber(propTotalAllocated)}원 (검증: ${Math.abs(propTotalAllocated - totalFreight) < FREIGHT_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
+                    <p><strong>총 판매가:</strong> ${formatNumber(propTotalSellingPrice)}원</p>
+                    <p><strong>총 판매이익:</strong> ${formatNumber(propTotalProfit)}원</p>
+                    <p><strong>희망 마진율:</strong> ${(targetMarginRate * 100).toFixed(2)}%</p>
+                    <p><strong>실제 마진율:</strong> ${propActualMarginPercent}%</p>
+                `;
+            }
         }
     </script>
 </body>
