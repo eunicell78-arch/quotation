@@ -487,6 +487,7 @@
                                     <th class="checkbox-col"><input type="checkbox" id="equalCheckAll" title="전체 선택/해제" onchange="toggleAllCheckboxes('equal', this.checked)"></th>
                                     <th>품명</th>
                                     <th>수량</th>
+                                    <th>구입단가($)</th>
                                     <th>구입단가(원)</th>
                                     <th>배분운임단가(원)</th>
                                     <th>판매단가(원)</th>
@@ -515,6 +516,7 @@
                                         <th class="checkbox-col"><input type="checkbox" id="propCheckAll" title="전체 선택/해제" onchange="toggleAllCheckboxes('prop', this.checked)"></th>
                                         <th>품명</th>
                                         <th>수량</th>
+                                        <th>구입단가($)</th>
                                         <th>구입단가(원)</th>
                                         <th>배분운임단가(원)</th>
                                         <th>판매단가(원)</th>
@@ -542,6 +544,9 @@
 
             <div class="saved-quotes-section" id="savedQuotesSection">
                 <h2>저장된 확정견적</h2>
+                <div class="save-controls">
+                    <button class="btn btn-csv" id="downloadAllCsvBtn" disabled onclick="downloadAllCSV()">전체 CSV 다운로드</button>
+                </div>
                 <div id="savedQuotesList">
                     <p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>
                 </div>
@@ -789,6 +794,7 @@
                     <td class="checkbox-col"><input type="checkbox" class="equal-item-check" data-index="${index}" onchange="updateSaveButtonState('equal')"></td>
                     <td>${result.name}</td>
                     <td>${result.quantity}</td>
+                    <td>${result.priceUSD}</td>
                     <td>${formatNumber(result.purchaseUnitPrice)}</td>
                     <td>${formatNumber(result.freightUnitPrice)}</td>
                     <td>${formatNumber(result.sellingPricePerUnit)}</td>
@@ -852,6 +858,7 @@
                         <td class="checkbox-col"><input type="checkbox" class="prop-item-check" data-index="${index}" onchange="updateSaveButtonState('prop')"></td>
                         <td>${result.name}</td>
                         <td>${result.quantity}</td>
+                        <td>${result.priceUSD}</td>
                         <td>${formatNumber(result.purchaseUnitPrice)}</td>
                         <td>${formatNumber(result.freightUnitPrice)}</td>
                         <td>${formatNumber(result.sellingPricePerUnit)}</td>
@@ -928,6 +935,7 @@
             const selectedItems = selectedIndices.map(i => ({
                 name: results[i].name,
                 quantity: results[i].quantity,
+                priceUSD: results[i].priceUSD,
                 purchaseUnitPrice: Math.round(results[i].purchaseUnitPrice),
                 freightUnitPrice: Math.round(results[i].freightUnitPrice),
                 sellingPricePerUnit: Math.round(results[i].sellingPricePerUnit),
@@ -972,7 +980,7 @@
             const headers = [
                 '견적ID', '저장일시', '운송방식', '무게구간', '총운임(원)',
                 '마진율(%)', '환율(원/$)', '배분방식',
-                '품목명', '수량', '구입단가(원)', '배분운임단가(원)',
+                '품목명', '수량', '구입단가($)', '구입단가(원)', '배분운임단가(원)',
                 '판매단가(원)', '총판매가(원)', '총판매이익(원)'
             ];
 
@@ -987,6 +995,7 @@
                 quote.allocationMethod,
                 item.name,
                 item.quantity,
+                item.priceUSD != null ? item.priceUSD : '',
                 item.purchaseUnitPrice,
                 item.freightUnitPrice,
                 item.sellingPricePerUnit,
@@ -1009,6 +1018,64 @@
             URL.revokeObjectURL(url);
         }
 
+        function downloadAllCSV() {
+            const quotes = getSavedQuotes();
+            if (quotes.length === 0) {
+                alert('저장된 확정견적이 없습니다.');
+                return;
+            }
+
+            const BOM = '\uFEFF';
+            const headers = [
+                '견적ID', '저장일시', '운송방식', '무게구간', '총운임(원)',
+                '마진율(%)', '환율(원/$)', '배분방식',
+                '품목명', '수량', '구입단가($)', '구입단가(원)', '배분운임단가(원)',
+                '판매단가(원)', '총판매가(원)', '총판매이익(원)'
+            ];
+
+            const allRows = [];
+            quotes.forEach(quote => {
+                quote.items.forEach(item => {
+                    allRows.push([
+                        quote.id,
+                        new Date(quote.savedAt).toLocaleString('ko-KR'),
+                        quote.shippingMethod,
+                        quote.weightLabel,
+                        quote.totalFreight,
+                        quote.marginRate,
+                        quote.exchangeRate,
+                        quote.allocationMethod,
+                        item.name,
+                        item.quantity,
+                        item.priceUSD != null ? item.priceUSD : '',
+                        item.purchaseUnitPrice,
+                        item.freightUnitPrice,
+                        item.sellingPricePerUnit,
+                        item.totalSellingPrice,
+                        item.totalProfit
+                    ]);
+                });
+            });
+
+            const csvContent = BOM + [headers, ...allRows]
+                .map(row => row.map(cell => '"' + String(cell == null ? '' : cell).replace(/"/g, '""') + '"').join(','))
+                .join('\r\n');
+
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `확정견적_전체_${dateStr}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         function toggleDetail(id) {
             const detail = document.getElementById('detail-' + id);
             const toggle = document.getElementById('toggle-' + id);
@@ -1025,6 +1092,9 @@
         function renderSavedQuotesList() {
             const container = document.getElementById('savedQuotesList');
             const quotes = getSavedQuotes();
+
+            const downloadAllBtn = document.getElementById('downloadAllCsvBtn');
+            if (downloadAllBtn) downloadAllBtn.disabled = quotes.length === 0;
 
             if (quotes.length === 0) {
                 container.innerHTML = '<p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>';
