@@ -315,12 +315,42 @@
             padding-top: 20px;
         }
 
-        .saved-quotes-section h2 {
-            color: #667eea;
+        .saved-quotes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 20px;
-            font-size: 1.5em;
             border-bottom: 2px solid #667eea;
             padding-bottom: 10px;
+        }
+
+        .saved-quotes-header h2 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin: 0;
+        }
+
+        .btn-csv-all {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+
+        .btn-csv-all:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-csv-all:disabled {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            opacity: 0.65;
         }
 
         .quote-card {
@@ -541,7 +571,10 @@
             </div>
 
             <div class="saved-quotes-section" id="savedQuotesSection">
-                <h2>저장된 확정견적</h2>
+                <div class="saved-quotes-header">
+                    <h2>저장된 확정견적</h2>
+                    <button class="btn btn-csv-all" id="btnDownloadAll" onclick="downloadAllCSV()" disabled>전체 CSV 다운로드</button>
+                </div>
                 <div id="savedQuotesList">
                     <p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>
                 </div>
@@ -963,6 +996,57 @@
             renderSavedQuotesList();
         }
 
+        function downloadAllCSV() {
+            const quotes = getSavedQuotes();
+            if (quotes.length === 0) return;
+
+            const BOM = '\uFEFF';
+            const headers = [
+                '견적ID', '저장일시', '운송방식', '무게구간', '총운임(원)',
+                '마진율(%)', '환율(원/$)', '배분방식',
+                '품목명', '수량', '구입단가(원)', '배분운임단가(원)',
+                '판매단가(원)', '총판매가(원)', '총판매이익(원)'
+            ];
+
+            const allRows = quotes.flatMap(quote =>
+                quote.items.map(item => [
+                    quote.id,
+                    new Date(quote.savedAt).toLocaleString('ko-KR'),
+                    quote.shippingMethod,
+                    quote.weightLabel,
+                    quote.totalFreight,
+                    quote.marginRate,
+                    quote.exchangeRate,
+                    quote.allocationMethod,
+                    item.name,
+                    item.quantity,
+                    item.purchaseUnitPrice,
+                    item.freightUnitPrice,
+                    item.sellingPricePerUnit,
+                    item.totalSellingPrice,
+                    item.totalProfit
+                ])
+            );
+
+            const csvContent = BOM + [headers, ...allRows]
+                .map(row => row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
+                .join('\r\n');
+
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const timestamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `확정견적_전체_${timestamp}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         function downloadCSV(id) {
             const quotes = getSavedQuotes();
             const quote = quotes.find(q => q.id === id);
@@ -1025,11 +1109,15 @@
         function renderSavedQuotesList() {
             const container = document.getElementById('savedQuotesList');
             const quotes = getSavedQuotes();
+            const btnAll = document.getElementById('btnDownloadAll');
 
             if (quotes.length === 0) {
                 container.innerHTML = '<p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>';
+                if (btnAll) btnAll.disabled = true;
                 return;
             }
+
+            if (btnAll) btnAll.disabled = false;
 
             container.innerHTML = quotes.map(quote => {
                 const totalSelling = quote.items.reduce((s, i) => s + i.totalSellingPrice, 0);
