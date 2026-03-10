@@ -409,6 +409,117 @@
                 padding: 15px;
             }
         }
+
+        .user-key-section {
+            background: #f0f4ff;
+            border: 1px solid #c5d0f7;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+
+        .user-key-section h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+
+        .user-key-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .user-key-display {
+            font-family: monospace;
+            font-size: 0.88em;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 6px 10px;
+            word-break: break-all;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .btn-sync {
+            background: linear-gradient(135deg, #fd7e14 0%, #e65c00 100%);
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .btn-sync:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(253, 126, 20, 0.4);
+        }
+
+        .btn-migrate {
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .btn-migrate:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(111, 66, 193, 0.4);
+        }
+
+        .sql-setup {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+        }
+
+        .sql-setup summary {
+            cursor: pointer;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 0.95em;
+            user-select: none;
+        }
+
+        .sql-setup pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.82em;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .sync-status {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 4px;
+            min-height: 1.2em;
+        }
+
+        .sync-status.ok { color: #28a745; }
+        .sync-status.error { color: #dc3545; }
+        .sync-status.loading { color: #fd7e14; }
+
+        .change-key-input {
+            flex: 1;
+            padding: 8px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9em;
+            min-width: 180px;
+        }
+
+        .change-key-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -544,8 +655,55 @@
 
             <div class="saved-quotes-section" id="savedQuotesSection">
                 <h2>저장된 확정견적</h2>
+
+                <div class="user-key-section">
+                    <h3>🔑 기기 간 동기화 (사용자 키)</h3>
+                    <div class="user-key-row">
+                        <span style="white-space:nowrap; font-weight:600;">내 사용자 키:</span>
+                        <span class="user-key-display" id="userKeyDisplay">로딩 중...</span>
+                        <button class="btn btn-secondary btn-sm" onclick="copyUserKey()">복사</button>
+                    </div>
+                    <div class="user-key-row">
+                        <input type="text" id="changeUserKeyInput" class="change-key-input"
+                               placeholder="다른 기기의 사용자 키 붙여넣기">
+                        <button class="btn btn-sync btn-sm" onclick="changeUserKey()">이 키로 동기화</button>
+                    </div>
+                    <div id="syncStatus" class="sync-status"></div>
+                </div>
+
+                <details class="sql-setup">
+                    <summary>📋 Supabase 테이블 설정 (최초 1회 실행)</summary>
+                    <p style="margin-top:8px; color:#666; font-size:0.9em;">
+                        Supabase 프로젝트 → SQL Editor에서 아래 SQL을 실행하세요.
+                        <strong style="color:#dc3545;">anon key가 코드에 포함되어 있으므로 누구나 URL을 알면 접근 가능합니다 (A안).</strong>
+                    </p>
+                    <pre id="setupSqlText">-- confirmed_quotes 테이블 생성
+CREATE TABLE IF NOT EXISTS public.confirmed_quotes (
+  id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_key   text        NOT NULL,
+  quote_id   text,
+  payload    jsonb       NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_cq_user_key  ON public.confirmed_quotes (user_key);
+CREATE INDEX IF NOT EXISTS idx_cq_quote_id  ON public.confirmed_quotes (quote_id);
+
+-- RLS 비활성화 (보안 강제 없음, A안)
+ALTER TABLE public.confirmed_quotes DISABLE ROW LEVEL SECURITY;
+
+-- anon 역할에 CRUD 권한 부여
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON public.confirmed_quotes TO anon;</pre>
+                    <button class="btn btn-secondary btn-sm" style="margin-top:8px;"
+                            onclick="copySqlSetup()">SQL 복사</button>
+                </details>
+
                 <div class="save-controls">
                     <button class="btn btn-csv" id="downloadAllCsvBtn" disabled onclick="downloadAllCSV()">전체 CSV 다운로드</button>
+                    <button class="btn btn-migrate btn-sm" id="migrateBtn" onclick="migrateLocalToCloud()">로컬→클라우드 가져오기</button>
+                    <button class="btn btn-secondary btn-sm" onclick="renderSavedQuotesList()">↻ 새로고침</button>
                 </div>
                 <div id="savedQuotesList">
                     <p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>
@@ -554,7 +712,191 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script>
+        // ── Supabase 설정 (A안: 보안 강제 없음) ─────────────────────────────
+        // 주의: anon key는 의도적으로 공개됩니다 (A안 정책).
+        // anon key는 클라이언트 공개 키로, 해당 Supabase 프로젝트에서
+        // RLS를 비활성화하면 누구나 URL을 알면 접근 가능합니다.
+        // 실제 보안이 필요한 경우 RLS 정책 및 로그인 인증을 추가하세요.
+        const SUPABASE_URL = 'https://shxdmtpgqesifvhdisxq.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_9ziNNz4hidRw4ukRFjAkjA_biQaEcO3';
+        let sbClient = null;
+
+        function initSupabase() {
+            try {
+                sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } catch (e) {
+                console.warn('Supabase 초기화 실패:', e);
+                sbClient = null;
+            }
+        }
+
+        // ── 사용자 키 관리 ──────────────────────────────────────────────────
+        function getUserKey() {
+            let key = localStorage.getItem('quotationUserKey');
+            if (!key) {
+                key = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : 'uk-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 11);
+                localStorage.setItem('quotationUserKey', key);
+            }
+            return key;
+        }
+
+        function displayUserKey() {
+            const el = document.getElementById('userKeyDisplay');
+            if (el) el.textContent = getUserKey();
+        }
+
+        function copyUserKey() {
+            const key = getUserKey();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(key)
+                    .then(() => alert('사용자 키가 클립보드에 복사되었습니다.'))
+                    .catch(() => fallbackCopy(key));
+            } else {
+                fallbackCopy(key);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const inp = document.createElement('input');
+            inp.value = text;
+            document.body.appendChild(inp);
+            inp.select();
+            try { document.execCommand('copy'); alert('사용자 키가 클립보드에 복사되었습니다.'); }
+            catch (e) { alert('복사 실패. 직접 선택 후 복사해주세요:\n' + text); }
+            document.body.removeChild(inp);
+        }
+
+        function changeUserKey() {
+            const input = document.getElementById('changeUserKeyInput').value.trim();
+            if (!input) { alert('사용자 키를 입력해주세요.'); return; }
+            if (!confirm('사용자 키를 변경하면 해당 키의 데이터를 불러옵니다.\n계속하시겠습니까?')) return;
+            localStorage.setItem('quotationUserKey', input);
+            document.getElementById('changeUserKeyInput').value = '';
+            displayUserKey();
+            renderSavedQuotesList();
+        }
+
+        function copySqlSetup() {
+            const sql = document.getElementById('setupSqlText').textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(sql)
+                    .then(() => alert('SQL이 클립보드에 복사되었습니다.'))
+                    .catch(() => fallbackCopy(sql));
+            } else {
+                fallbackCopy(sql);
+            }
+        }
+
+        // ── Supabase CRUD ────────────────────────────────────────────────────
+        async function sbLoadQuotes() {
+            if (!sbClient) return null;
+            try {
+                const { data, error } = await sbClient
+                    .from('confirmed_quotes')
+                    .select('*')
+                    .eq('user_key', getUserKey())
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                return data.map(row => {
+                    const q = { ...row.payload };
+                    q._dbId = row.id;
+                    if (!q.id) q.id = row.quote_id || row.id;
+                    if (!q.savedAt) q.savedAt = row.created_at;
+                    return q;
+                });
+            } catch (e) {
+                console.error('Supabase 조회 오류:', e);
+                return null;
+            }
+        }
+
+        async function sbSaveQuote(quote) {
+            if (!sbClient) return false;
+            try {
+                const { error } = await sbClient
+                    .from('confirmed_quotes')
+                    .insert({ user_key: getUserKey(), quote_id: quote.id, payload: quote });
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.error('Supabase 저장 오류:', e);
+                return false;
+            }
+        }
+
+        async function sbDeleteQuote(quoteId) {
+            if (!sbClient) return false;
+            try {
+                const { error } = await sbClient
+                    .from('confirmed_quotes')
+                    .delete()
+                    .eq('user_key', getUserKey())
+                    .eq('quote_id', quoteId);
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.error('Supabase 삭제 오류:', e);
+                return false;
+            }
+        }
+
+        function setSyncStatus(msg, cls) {
+            const el = document.getElementById('syncStatus');
+            if (!el) return;
+            el.textContent = msg;
+            el.className = 'sync-status' + (cls ? ' ' + cls : '');
+        }
+
+        // ── 마이그레이션: 로컬 → 클라우드 ──────────────────────────────────
+        async function migrateLocalToCloud() {
+            if (!sbClient) {
+                alert('Supabase에 연결되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            const local = getSavedQuotes();
+            if (local.length === 0) { alert('로컬에 저장된 확정견적이 없습니다.'); return; }
+            if (!confirm(`로컬에 저장된 확정견적 ${local.length}건을 클라우드로 업로드합니다.\n중복 항목은 건너뜁니다. 계속하시겠습니까?`)) return;
+
+            const btn = document.getElementById('migrateBtn');
+            if (btn) btn.disabled = true;
+            setSyncStatus('업로드 중...', 'loading');
+
+            try {
+                const userKey = getUserKey();
+                // 이미 Supabase에 있는 quote_id 목록 조회
+                const { data: existing, error: fetchErr } = await sbClient
+                    .from('confirmed_quotes')
+                    .select('quote_id')
+                    .eq('user_key', userKey);
+                if (fetchErr) throw fetchErr;
+
+                const existingIds = new Set((existing || []).map(r => r.quote_id).filter(Boolean));
+                const toUpload = local.filter(q => q.id && !existingIds.has(q.id));
+
+                if (toUpload.length === 0) {
+                    setSyncStatus('✓ 모든 항목이 이미 클라우드에 있습니다.', 'ok');
+                    if (btn) btn.disabled = false;
+                    return;
+                }
+
+                const rows = toUpload.map(q => ({ user_key: userKey, quote_id: q.id, payload: q }));
+                const { error: insertErr } = await sbClient.from('confirmed_quotes').insert(rows);
+                if (insertErr) throw insertErr;
+
+                setSyncStatus(`✓ ${toUpload.length}건 업로드 완료 (건너뜀: ${local.length - toUpload.length}건)`, 'ok');
+                renderSavedQuotesList();
+            } catch (e) {
+                console.error('마이그레이션 오류:', e);
+                setSyncStatus('✗ 업로드 실패: ' + (e.message || e), 'error');
+            }
+            if (btn) btn.disabled = false;
+        }
+
+        // ── 기존 앱 변수 ─────────────────────────────────────────────────────
         let productIndex = 1;
         let currentEqualResults = null;
         let currentPropResults = null;
@@ -563,6 +905,7 @@
         let currentExchangeRate = 0;
         let currentShippingMethod = '';
         let currentWeightLabel = '';
+        let currentDisplayedQuotes = [];
 
         const FREIGHT_RATES = {
             DHL: [
@@ -614,26 +957,24 @@
             }
         }
 
-        // Add event listeners for real-time calculation updates
         document.addEventListener('DOMContentLoaded', function() {
-            // Listen to changes in global parameters
+            initSupabase();
+            displayUserKey();
+
             document.getElementById('totalFreight').addEventListener('input', autoCalculate);
             document.getElementById('marginRate').addEventListener('input', autoCalculate);
             document.getElementById('exchangeRate').addEventListener('input', autoCalculate);
-            
-            // Listen to changes in product inputs using event delegation
+
             document.getElementById('productsContainer').addEventListener('input', function(e) {
                 if (e.target.matches('.product-name, .product-price, .product-quantity')) {
                     autoCalculate();
                 }
             });
 
-            // Load saved quotes from localStorage
             renderSavedQuotesList();
         });
 
         function autoCalculate() {
-            // Only auto-calculate if results are already shown
             const results = document.getElementById('results');
             if (results.classList.contains('show')) {
                 calculate();
@@ -668,9 +1009,7 @@
             const products = document.querySelectorAll('.product-item');
             if (products.length > 1) {
                 const product = document.querySelector(`.product-item[data-index="${index}"]`);
-                if (product) {
-                    product.remove();
-                }
+                if (product) { product.remove(); }
             } else {
                 alert('최소 1개의 품목이 필요합니다.');
             }
@@ -681,20 +1020,17 @@
         }
 
         function calculate() {
-            // Get global parameters
             const totalFreight = parseFloat(document.getElementById('totalFreight').value) || 0;
             const marginRate = parseFloat(document.getElementById('marginRate').value) / 100 || 0;
             const exchangeRate = parseFloat(document.getElementById('exchangeRate').value) || 0;
 
-            // Get all products
             const products = [];
             const productItems = document.querySelectorAll('.product-item');
-            
+
             productItems.forEach(item => {
                 const name = item.querySelector('.product-name').value;
                 const price = parseFloat(item.querySelector('.product-price').value) || 0;
                 const quantity = parseInt(item.querySelector('.product-quantity').value) || 0;
-                
                 products.push({
                     name: name,
                     priceUSD: price,
@@ -704,15 +1040,9 @@
                 });
             });
 
-            if (products.length === 0) {
-                alert('품목을 추가해주세요.');
-                return;
-            }
+            if (products.length === 0) { alert('품목을 추가해주세요.'); return; }
 
-            // Calculate total quantity
             const totalQuantity = products.reduce((sum, p) => sum + p.quantity, 0);
-
-            // 배분운임단가 = 총운임 / 총수량 (모든 품목에 동일 적용)
             const freightUnitPrice = totalQuantity > 0 ? totalFreight / totalQuantity : 0;
 
             const equalResults = products.map(p => {
@@ -720,22 +1050,12 @@
                 const sellingPricePerUnit = (p.costKRW + freight) / (1 - marginRate) / p.quantity;
                 const totalSellingPrice = sellingPricePerUnit * p.quantity;
                 const totalProfit = (sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice) * p.quantity;
-                return {
-                    ...p,
-                    freight: freight,
-                    freightUnitPrice: freightUnitPrice,
-                    sellingPricePerUnit: sellingPricePerUnit,
-                    totalSellingPrice: totalSellingPrice,
-                    totalProfit: totalProfit
-                };
+                return { ...p, freight, freightUnitPrice, sellingPricePerUnit, totalSellingPrice, totalProfit };
             });
 
-            // 비례배분 (원가기준): 품목 원가합 = 구입단가(원) * 수량
             const totalCostAll = products.reduce((sum, p) => sum + p.costKRW, 0);
-
             let propResults = null;
             if (totalCostAll > 0 && products.length > 0) {
-                // Allocate freight proportionally; adjust last item to absorb rounding error
                 const rawFreights = products.map(p => totalFreight * (p.costKRW / totalCostAll));
                 const roundedFreights = rawFreights.map(f => Math.round(f));
                 const roundingDiff = totalFreight - roundedFreights.reduce((s, f) => s + f, 0);
@@ -745,25 +1065,15 @@
                     const freight = roundedFreights[i];
                     const freightUnitPrice = p.quantity > 0 ? freight / p.quantity : 0;
                     const sellingPricePerUnit = (p.quantity > 0 && (1 - marginRate) > 0)
-                        ? (p.costKRW + freight) / (1 - marginRate) / p.quantity
-                        : 0;
+                        ? (p.costKRW + freight) / (1 - marginRate) / p.quantity : 0;
                     const totalSellingPrice = sellingPricePerUnit * p.quantity;
                     const totalProfit = (sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice) * p.quantity;
-                    return {
-                        ...p,
-                        freight: freight,
-                        freightUnitPrice: freightUnitPrice,
-                        sellingPricePerUnit: sellingPricePerUnit,
-                        totalSellingPrice: totalSellingPrice,
-                        totalProfit: totalProfit
-                    };
+                    return { ...p, freight, freightUnitPrice, sellingPricePerUnit, totalSellingPrice, totalProfit };
                 });
             }
 
-            // Display results
             displayResults(equalResults, propResults, totalFreight, marginRate);
 
-            // Store current state for saving
             currentEqualResults = equalResults;
             currentPropResults = propResults;
             currentFreight = totalFreight;
@@ -773,7 +1083,6 @@
             const wOpt = document.getElementById('weightOption');
             currentWeightLabel = wOpt.options[wOpt.selectedIndex] ? wOpt.options[wOpt.selectedIndex].text : '';
 
-            // Show results section
             document.getElementById('results').classList.add('show');
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
@@ -782,12 +1091,10 @@
             const tbody = document.getElementById('equalResultsBody');
             tbody.innerHTML = '';
 
-            // Reset "check all" checkbox
             const equalCheckAll = document.getElementById('equalCheckAll');
             if (equalCheckAll) equalCheckAll.checked = false;
 
             let totalSellingPrice = 0;
-
             results.forEach((result, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -805,24 +1112,18 @@
                 totalSellingPrice += result.totalSellingPrice;
             });
 
-            // Reset save button
             updateSaveButtonState('equal');
 
-            // Calculate actual margin
             const totalCost = results.reduce((sum, r) => sum + r.costKRW, 0);
             const actualMargin = totalSellingPrice > 0
-                ? (totalSellingPrice - totalCost - totalFreight) / totalSellingPrice
-                : 0;
+                ? (totalSellingPrice - totalCost - totalFreight) / totalSellingPrice : 0;
             const actualMarginPercent = (actualMargin * 100).toFixed(2);
-
             const totalAllocatedFreight = results.reduce((sum, r) => sum + r.freight, 0);
             const FREIGHT_TOLERANCE = 1;
             const MARGIN_TOLERANCE = 0.0001;
-
             const totalProfit = results.reduce((sum, r) => sum + r.totalProfit, 0);
 
-            const summary = document.getElementById('equalSummary');
-            summary.innerHTML = `
+            document.getElementById('equalSummary').innerHTML = `
                 <p><strong>총 원가:</strong> ${formatNumber(totalCost)}원</p>
                 <p><strong>총 운임:</strong> ${formatNumber(totalFreight)}원</p>
                 <p><strong>배분된 운임 합계:</strong> ${formatNumber(totalAllocatedFreight)}원 (검증: ${Math.abs(totalAllocatedFreight - totalFreight) < FREIGHT_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
@@ -832,7 +1133,6 @@
                 <p><strong>실제 마진율:</strong> ${actualMarginPercent}% (검증: ${Math.abs(actualMargin - targetMarginRate) < MARGIN_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
             `;
 
-            // Proportional allocation results
             const propContainer = document.getElementById('propResultsContainer');
             const propMessage = document.getElementById('propResultsMessage');
 
@@ -846,12 +1146,10 @@
                 const propTbody = document.getElementById('propResultsBody');
                 propTbody.innerHTML = '';
 
-                // Reset "check all" checkbox
                 const propCheckAll = document.getElementById('propCheckAll');
                 if (propCheckAll) propCheckAll.checked = false;
 
                 let propTotalSellingPrice = 0;
-
                 propResults.forEach((result, index) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -869,19 +1167,16 @@
                     propTotalSellingPrice += result.totalSellingPrice;
                 });
 
-                // Reset save button
                 updateSaveButtonState('prop');
 
                 const propTotalCost = propResults.reduce((sum, r) => sum + r.costKRW, 0);
                 const propActualMargin = propTotalSellingPrice > 0
-                    ? (propTotalSellingPrice - propTotalCost - totalFreight) / propTotalSellingPrice
-                    : 0;
+                    ? (propTotalSellingPrice - propTotalCost - totalFreight) / propTotalSellingPrice : 0;
                 const propActualMarginPercent = (propActualMargin * 100).toFixed(2);
                 const propTotalAllocated = propResults.reduce((sum, r) => sum + r.freight, 0);
                 const propTotalProfit = propResults.reduce((sum, r) => sum + r.totalProfit, 0);
 
-                const propSummary = document.getElementById('propSummary');
-                propSummary.innerHTML = `
+                document.getElementById('propSummary').innerHTML = `
                     <p><strong>총 원가:</strong> ${formatNumber(propTotalCost)}원</p>
                     <p><strong>총 운임:</strong> ${formatNumber(totalFreight)}원</p>
                     <p><strong>배분된 운임 합계:</strong> ${formatNumber(propTotalAllocated)}원 (검증: ${Math.abs(propTotalAllocated - totalFreight) < FREIGHT_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
@@ -892,10 +1187,9 @@
                 `;
             }
         }
+
         function toggleAllCheckboxes(type, checked) {
-            document.querySelectorAll(`.${type}-item-check`).forEach(cb => {
-                cb.checked = checked;
-            });
+            document.querySelectorAll(`.${type}-item-check`).forEach(cb => { cb.checked = checked; });
             const checkAll = document.getElementById(`${type}CheckAll`);
             if (checkAll) checkAll.checked = checked;
             updateSaveButtonState(type);
@@ -905,32 +1199,27 @@
             const checkboxes = document.querySelectorAll(`.${type}-item-check`);
             const saveBtn = document.getElementById(`${type}SaveBtn`);
             if (!saveBtn) return;
-            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-            saveBtn.disabled = !anyChecked;
+            saveBtn.disabled = !Array.from(checkboxes).some(cb => cb.checked);
         }
 
+        // ── localStorage 헬퍼 ────────────────────────────────────────────────
         function getSavedQuotes() {
-            try {
-                return JSON.parse(localStorage.getItem('confirmedQuotes') || '[]');
-            } catch (e) {
-                return [];
-            }
+            try { return JSON.parse(localStorage.getItem('confirmedQuotes') || '[]'); }
+            catch (e) { return []; }
         }
 
-        function saveSelectedItems(allocationType) {
+        function setSavedQuotes(quotes) {
+            localStorage.setItem('confirmedQuotes', JSON.stringify(quotes));
+        }
+
+        // ── 저장 ─────────────────────────────────────────────────────────────
+        async function saveSelectedItems(allocationType) {
             const results = allocationType === 'equal' ? currentEqualResults : currentPropResults;
-            if (!results) {
-                alert('계산된 결과가 없습니다. 먼저 계산하기를 눌러주세요.');
-                return;
-            }
+            if (!results) { alert('계산된 결과가 없습니다. 먼저 계산하기를 눌러주세요.'); return; }
 
             const checkboxes = document.querySelectorAll(`.${allocationType}-item-check:checked`);
             const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
-
-            if (selectedIndices.length === 0) {
-                alert('저장할 품목을 선택해주세요.');
-                return;
-            }
+            if (selectedIndices.length === 0) { alert('저장할 품목을 선택해주세요.'); return; }
 
             const selectedItems = selectedIndices.map(i => ({
                 name: results[i].name,
@@ -944,87 +1233,73 @@
             }));
 
             const quote = {
-                id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
+                id: Date.now().toString() + '-' + Math.random().toString(36).substring(2, 11),
                 savedAt: new Date().toISOString(),
                 shippingMethod: currentShippingMethod,
                 weightLabel: currentWeightLabel,
                 totalFreight: currentFreight,
-                marginRate: Math.round(currentMarginRate * 10000) / 100, // decimal → %
+                marginRate: Math.round(currentMarginRate * 10000) / 100,
                 exchangeRate: currentExchangeRate,
                 allocationMethod: allocationType === 'equal' ? '균등배분' : '비례배분',
                 items: selectedItems
             };
 
-            const quotes = getSavedQuotes();
-            quotes.unshift(quote);
-            localStorage.setItem('confirmedQuotes', JSON.stringify(quotes));
+            // localStorage 저장 (fallback)
+            const localQuotes = getSavedQuotes();
+            localQuotes.unshift(quote);
+            setSavedQuotes(localQuotes);
+
+            // Supabase 저장
+            setSyncStatus('저장 중...', 'loading');
+            const ok = await sbSaveQuote(quote);
+            if (ok) {
+                setSyncStatus('✓ 클라우드에 저장되었습니다.', 'ok');
+            } else {
+                setSyncStatus('⚠ 로컬에만 저장되었습니다 (Supabase 저장 실패).', 'error');
+            }
 
             renderSavedQuotesList();
-
             document.getElementById('savedQuotesSection').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function deleteQuote(id) {
+        // ── 삭제 ─────────────────────────────────────────────────────────────
+        async function deleteQuote(id) {
             if (!confirm('이 확정견적을 삭제하시겠습니까?')) return;
-            const quotes = getSavedQuotes().filter(q => q.id !== id);
-            localStorage.setItem('confirmedQuotes', JSON.stringify(quotes));
+
+            // localStorage 삭제
+            setSavedQuotes(getSavedQuotes().filter(q => q.id !== id));
+
+            // Supabase 삭제
+            setSyncStatus('삭제 중...', 'loading');
+            const ok = await sbDeleteQuote(id);
+            setSyncStatus(ok ? '✓ 삭제되었습니다.' : '⚠ 로컬에서만 삭제되었습니다 (Supabase 삭제 실패).', ok ? 'ok' : 'error');
+
             renderSavedQuotesList();
         }
 
+        // ── CSV 다운로드 (1건) ────────────────────────────────────────────────
         function downloadCSV(id) {
-            const quotes = getSavedQuotes();
-            const quote = quotes.find(q => q.id === id);
+            const quote = currentDisplayedQuotes.find(q => q.id === id)
+                       || getSavedQuotes().find(q => q.id === id);
             if (!quote) return;
-
-            const BOM = '\uFEFF';
-            const headers = [
-                '견적ID', '저장일시', '운송방식', '무게구간', '총운임(원)',
-                '마진율(%)', '환율(원/$)', '배분방식',
-                '품목명', '수량', '구입단가($)', '구입단가(원)', '배분운임단가(원)',
-                '판매단가(원)', '총판매가(원)', '총판매이익(원)'
-            ];
-
-            const rows = quote.items.map(item => [
-                quote.id,
-                new Date(quote.savedAt).toLocaleString('ko-KR'),
-                quote.shippingMethod,
-                quote.weightLabel,
-                quote.totalFreight,
-                quote.marginRate,
-                quote.exchangeRate,
-                quote.allocationMethod,
-                item.name,
-                item.quantity,
-                item.priceUSD != null ? item.priceUSD : '',
-                item.purchaseUnitPrice,
-                item.freightUnitPrice,
-                item.sellingPricePerUnit,
-                item.totalSellingPrice,
-                item.totalProfit
-            ]);
-
-            const csvContent = BOM + [headers, ...rows]
-                .map(row => row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
-                .join('\r\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '확정견적_' + quote.id + '.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            triggerCsvDownload('확정견적_' + quote.id + '.csv', buildCsvContent([quote]));
         }
 
-        function downloadAllCSV() {
-            const quotes = getSavedQuotes();
-            if (quotes.length === 0) {
-                alert('저장된 확정견적이 없습니다.');
-                return;
-            }
+        // ── CSV 다운로드 (전체) ───────────────────────────────────────────────
+        async function downloadAllCSV() {
+            let quotes = null;
+            if (sbClient) { quotes = await sbLoadQuotes(); }
+            if (!quotes) quotes = getSavedQuotes();
 
+            if (quotes.length === 0) { alert('저장된 확정견적이 없습니다.'); return; }
+
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+            triggerCsvDownload(`확정견적_전체_${dateStr}.csv`, buildCsvContent(quotes));
+        }
+
+        function buildCsvContent(quotes) {
             const BOM = '\uFEFF';
             const headers = [
                 '견적ID', '저장일시', '운송방식', '무게구간', '총운임(원)',
@@ -1032,10 +1307,9 @@
                 '품목명', '수량', '구입단가($)', '구입단가(원)', '배분운임단가(원)',
                 '판매단가(원)', '총판매가(원)', '총판매이익(원)'
             ];
-
             const allRows = [];
             quotes.forEach(quote => {
-                quote.items.forEach(item => {
+                (quote.items || []).forEach(item => {
                     allRows.push([
                         quote.id,
                         new Date(quote.savedAt).toLocaleString('ko-KR'),
@@ -1056,26 +1330,24 @@
                     ]);
                 });
             });
-
-            const csvContent = BOM + [headers, ...allRows]
+            return BOM + [headers, ...allRows]
                 .map(row => row.map(cell => '"' + String(cell == null ? '' : cell).replace(/"/g, '""') + '"').join(','))
                 .join('\r\n');
+        }
 
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
-
+        function triggerCsvDownload(filename, csvContent) {
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `확정견적_전체_${dateStr}.csv`;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
 
+        // ── 상세 토글 ─────────────────────────────────────────────────────────
         function toggleDetail(id) {
             const detail = document.getElementById('detail-' + id);
             const toggle = document.getElementById('toggle-' + id);
@@ -1089,9 +1361,31 @@
             }
         }
 
-        function renderSavedQuotesList() {
+        // ── 저장 목록 렌더링 (Supabase 우선, localStorage fallback) ──────────
+        async function renderSavedQuotesList() {
             const container = document.getElementById('savedQuotesList');
-            const quotes = getSavedQuotes();
+            container.innerHTML = '<p class="no-quotes-msg">불러오는 중...</p>';
+
+            let quotes = null;
+            let source = 'local';
+
+            if (sbClient) {
+                setSyncStatus('클라우드에서 불러오는 중...', 'loading');
+                quotes = await sbLoadQuotes();
+                if (quotes !== null) {
+                    source = 'cloud';
+                    setSyncStatus(`✓ 클라우드 동기화됨 (${quotes.length}건)`, 'ok');
+                } else {
+                    setSyncStatus('⚠ 클라우드 연결 실패 — 로컬 데이터를 표시합니다.', 'error');
+                }
+            }
+
+            if (quotes === null) {
+                quotes = getSavedQuotes();
+                source = 'local';
+            }
+
+            currentDisplayedQuotes = quotes;
 
             const downloadAllBtn = document.getElementById('downloadAllCsvBtn');
             if (downloadAllBtn) downloadAllBtn.disabled = quotes.length === 0;
@@ -1102,14 +1396,15 @@
             }
 
             container.innerHTML = quotes.map(quote => {
-                const totalSelling = quote.items.reduce((s, i) => s + i.totalSellingPrice, 0);
-                const totalProfit = quote.items.reduce((s, i) => s + i.totalProfit, 0);
-                const savedDate = new Date(quote.savedAt).toLocaleString('ko-KR');
+                const totalSelling = (quote.items || []).reduce((s, i) => s + i.totalSellingPrice, 0);
+                const totalProfit  = (quote.items || []).reduce((s, i) => s + i.totalProfit, 0);
+                const savedDate    = new Date(quote.savedAt).toLocaleString('ko-KR');
 
-                const itemsHtml = quote.items.map(item => `
+                const itemsHtml = (quote.items || []).map(item => `
                     <tr>
                         <td>${item.name}</td>
                         <td>${item.quantity}</td>
+                        <td>${item.priceUSD != null ? item.priceUSD : '-'}</td>
                         <td>${formatNumber(item.purchaseUnitPrice)}</td>
                         <td>${formatNumber(item.freightUnitPrice)}</td>
                         <td>${formatNumber(item.sellingPricePerUnit)}</td>
@@ -1128,7 +1423,7 @@
                                 <span>마진 ${quote.marginRate}%</span>
                                 <span>환율 ${formatNumber(quote.exchangeRate)}원/$</span>
                                 <span>배분: ${quote.allocationMethod}</span>
-                                <span>품목 ${quote.items.length}개</span>
+                                <span>품목 ${(quote.items || []).length}개</span>
                                 <span>총판매가 ${formatNumber(totalSelling)}원</span>
                                 <span>총이익 ${formatNumber(totalProfit)}원</span>
                             </div>
@@ -1145,6 +1440,7 @@
                                         <tr>
                                             <th>품명</th>
                                             <th>수량</th>
+                                            <th>구입단가($)</th>
                                             <th>구입단가(원)</th>
                                             <th>배분운임단가(원)</th>
                                             <th>판매단가(원)</th>
