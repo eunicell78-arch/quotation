@@ -1,41 +1,1167 @@
-<!DOCTYPE html>  
-<html lang="en">  
-<head>  
-    <meta charset="UTF-8">  
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">  
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>Quotation</title>  
-</head>  
-<body>  
-    <h1>Saved Quotes</h1>  
-    <div id="quotes-list"></div>  
-    <button id="download-csv">Download CSV</button>  
-    <script>  
-        // Load quotes from localStorage  
-        const loadQuotes = () => {  
-            const quotes = JSON.parse(localStorage.getItem('quotes')) || [];  
-            const quotesList = document.getElementById('quotes-list');  
-            quotesList.innerHTML = '';  
-            quotes.forEach(quote => {  
-                const quoteItem = document.createElement('div');  
-                quoteItem.textContent = quote;  
-                quotesList.appendChild(quoteItem);  
-            });  
-        };  
-        // Download quotes as CSV  
-        document.getElementById('download-csv').addEventListener('click', () => {  
-            const quotes = JSON.parse(localStorage.getItem('quotes')) || [];  
-            const csvContent = "data:text/csv;charset=utf-8," + quotes.join('\n');  
-            const encodedUri = encodeURI(csvContent);  
-            const link = document.createElement('a');  
-            link.setAttribute('href', encodedUri);  
-            link.setAttribute('download', 'quotes.csv');  
-            document.body.appendChild(link);  
-            link.click();  
-            document.body.removeChild(link);  
-        });  
-        // Load quotes on page load  
-        window.onload = loadQuotes;  
-    <\/script>  
-</body>  
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>품목 판매단가 자동 계산기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .global-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+            background: white;
+        }
+
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .products-container {
+            margin-top: 20px;
+        }
+
+        .product-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .product-item .input-group {
+            margin: 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            padding: 10px 15px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 10px 15px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-add {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn-calculate {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        .results {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-section {
+            margin-bottom: 30px;
+        }
+
+        .result-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background: #e9ecef;
+        }
+
+        .summary {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .summary p {
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+
+        .summary strong {
+            color: #667eea;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .table-wrapper table {
+            min-width: 800px;
+        }
+
+        .warning-message {
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .checkbox-col {
+            width: 40px;
+            text-align: center;
+        }
+
+        .save-controls {
+            display: flex;
+            gap: 10px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-save:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-csv {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .btn-csv:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(23, 162, 184, 0.4);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .saved-quotes-section {
+            margin-top: 40px;
+            border-top: 3px solid #667eea;
+            padding-top: 20px;
+        }
+
+        .saved-quotes-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .quote-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .quote-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .quote-card-summary {
+            font-size: 0.9em;
+            line-height: 2;
+            flex: 1;
+        }
+
+        .quote-card-summary span {
+            display: inline-block;
+            margin-right: 12px;
+            color: #495057;
+        }
+
+        .quote-card-summary strong {
+            color: #333;
+        }
+
+        .quote-card-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toggle-detail {
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: inline-block;
+            user-select: none;
+        }
+
+        .toggle-detail:hover {
+            text-decoration: underline;
+        }
+
+        .quote-items-detail {
+            margin-top: 10px;
+        }
+
+        .quote-items-detail .table-wrapper table {
+            min-width: 700px;
+            font-size: 0.9em;
+        }
+
+        .no-quotes-msg {
+            color: #666;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+
+            .product-item {
+                grid-template-columns: 1fr;
+            }
+
+            .global-params {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.5em;
+            }
+
+            .content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>품목 판매단가 자동 계산기</h1>
+            <p>품목 원가 기반 판매단가 자동 계산 시스템</p>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <h2>기본 설정</h2>
+                <div class="global-params">
+                    <div class="input-group">
+                        <label for="shippingMethod">운송 방식</label>
+                        <select id="shippingMethod" onchange="updateWeightOptions()">
+                            <option value="">-- 선택 --</option>
+                            <option value="DHL">DHL</option>
+                            <option value="Forwarder">Forwarder</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="weightOption">무게 구간</label>
+                        <select id="weightOption" onchange="applyFreightRate()">
+                            <option value="">-- 선택 --</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="totalFreight">총운임(원)</label>
+                        <input type="number" id="totalFreight" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="marginRate">희망 마진율(%)</label>
+                        <input type="number" id="marginRate" value="20" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="exchangeRate">적용 환율(원/$)</label>
+                        <input type="number" id="exchangeRate" value="1500" min="0" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>품목 입력</h2>
+                <div class="products-container" id="productsContainer">
+                    <div class="product-item" data-index="0">
+                        <div class="input-group">
+                            <label>품명</label>
+                            <input type="text" class="product-name" value="품목 1">
+                        </div>
+                        <div class="input-group">
+                            <label>단가($)</label>
+                            <input type="number" class="product-price" value="100" min="0" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label>수량</label>
+                            <input type="number" class="product-quantity" value="10" min="1">
+                        </div>
+                        <button class="btn btn-danger remove-product" onclick="removeProduct(0)">삭제</button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-add" onclick="addProduct()">+ 품목 추가</button>
+            </div>
+
+            <button class="btn btn-primary btn-calculate" onclick="calculate()">계산하기</button>
+
+            <div class="results" id="results">
+                <div class="section result-section">
+                    <h2>계산 결과</h2>
+                    
+                    <h3>운임 균등배분 시 판매가</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="checkbox-col"><input type="checkbox" id="equalCheckAll" title="전체 선택/해제" onchange="toggleAllCheckboxes('equal', this.checked)"></th>
+                                    <th>품명</th>
+                                    <th>수량</th>
+                                    <th>구입단가($)</th>
+                                    <th>구입단가(원)</th>
+                                    <th>배분운임단가(원)</th>
+                                    <th>판매단가(원)</th>
+                                    <th>총판매이익(원)</th>
+                                    <th>총 판매가(원)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="equalResultsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="save-controls">
+                        <button class="btn btn-secondary btn-sm" onclick="toggleAllCheckboxes('equal', true)">전체 선택</button>
+                        <button class="btn btn-secondary btn-sm" onclick="toggleAllCheckboxes('equal', false)">선택 해제</button>
+                        <button class="btn btn-save btn-sm" id="equalSaveBtn" disabled onclick="saveSelectedItems('equal')">선택 품목 저장 (균등배분)</button>
+                    </div>
+                    <div class="summary" id="equalSummary">
+                    </div>
+
+                    <h3 style="margin-top:30px;">운임 비례배분 시 판매가 (원가기준)</h3>
+                    <div id="propResultsContainer">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-col"><input type="checkbox" id="propCheckAll" title="전체 선택/해제" onchange="toggleAllCheckboxes('prop', this.checked)"></th>
+                                        <th>품명</th>
+                                        <th>수량</th>
+                                        <th>구입단가($)</th>
+                                        <th>구입단가(원)</th>
+                                        <th>배분운임단가(원)</th>
+                                        <th>판매단가(원)</th>
+                                        <th>총판매이익(원)</th>
+                                        <th>총 판매가(원)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="propResultsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="save-controls">
+                            <button class="btn btn-secondary btn-sm" onclick="toggleAllCheckboxes('prop', true)">전체 선택</button>
+                            <button class="btn btn-secondary btn-sm" onclick="toggleAllCheckboxes('prop', false)">선택 해제</button>
+                            <button class="btn btn-save btn-sm" id="propSaveBtn" disabled onclick="saveSelectedItems('prop')">선택 품목 저장 (비례배분)</button>
+                        </div>
+                        <div class="summary" id="propSummary">
+                        </div>
+                    </div>
+                    <div id="propResultsMessage" class="warning-message" style="display:none;">
+                        ⚠️ 원가 합계가 0이므로 비례배분을 계산할 수 없습니다. 단가 및 수량을 확인해주세요.
+                    </div>
+                </div>
+            </div>
+
+            <div class="saved-quotes-section" id="savedQuotesSection">
+                <h2>저장된 확정견적</h2>
+                <div class="save-controls">
+                    <button class="btn btn-csv" id="downloadAllCsvBtn" disabled onclick="downloadAllCSV()">전체 CSV 다운로드</button>
+                </div>
+                <div id="savedQuotesList">
+                    <p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let productIndex = 1;
+        let currentEqualResults = null;
+        let currentPropResults = null;
+        let currentFreight = 0;
+        let currentMarginRate = 0;
+        let currentExchangeRate = 0;
+        let currentShippingMethod = '';
+        let currentWeightLabel = '';
+
+        const FREIGHT_RATES = {
+            DHL: [
+                { label: '1-5kg',   value: 150000 },
+                { label: '5-10kg',  value: 200000 },
+                { label: '10-15kg', value: 250000 },
+                { label: '15-20kg', value: 300000 },
+                { label: '20-25kg', value: 400000 },
+                { label: '25-30kg', value: 500000 }
+            ],
+            Forwarder: [
+                { label: '30kg',   value: 350000 },
+                { label: '50kg',   value: 400000 },
+                { label: '70kg',   value: 550000 },
+                { label: '100kg',  value: 700000 },
+                { label: '150kg',  value: 1000000 },
+                { label: '200kg',  value: 1300000 },
+                { label: '250kg',  value: 1600000 },
+                { label: '300kg',  value: 1950000 },
+                { label: '400kg',  value: 2600000 },
+                { label: '500kg',  value: 3200000 },
+                { label: '600kg',  value: 3800000 },
+                { label: '700kg',  value: 4500000 },
+                { label: '800kg',  value: 5000000 },
+                { label: '900kg',  value: 5700000 },
+                { label: '1000kg', value: 6500000 }
+            ]
+        };
+
+        function updateWeightOptions() {
+            const method = document.getElementById('shippingMethod').value;
+            const weightSelect = document.getElementById('weightOption');
+            weightSelect.innerHTML = '<option value="">-- 선택 --</option>';
+            if (method && FREIGHT_RATES[method]) {
+                FREIGHT_RATES[method].forEach(rate => {
+                    const option = document.createElement('option');
+                    option.value = rate.value;
+                    option.textContent = `${rate.label} (${formatNumber(rate.value)}원)`;
+                    weightSelect.appendChild(option);
+                });
+            }
+        }
+
+        function applyFreightRate() {
+            const value = document.getElementById('weightOption').value;
+            if (value) {
+                document.getElementById('totalFreight').value = value;
+                autoCalculate();
+            }
+        }
+
+        // Add event listeners for real-time calculation updates
+        document.addEventListener('DOMContentLoaded', function() {
+            // Listen to changes in global parameters
+            document.getElementById('totalFreight').addEventListener('input', autoCalculate);
+            document.getElementById('marginRate').addEventListener('input', autoCalculate);
+            document.getElementById('exchangeRate').addEventListener('input', autoCalculate);
+            
+            // Listen to changes in product inputs using event delegation
+            document.getElementById('productsContainer').addEventListener('input', function(e) {
+                if (e.target.matches('.product-name, .product-price, .product-quantity')) {
+                    autoCalculate();
+                }
+            });
+
+            // Load saved quotes from localStorage
+            renderSavedQuotesList();
+        });
+
+        function autoCalculate() {
+            // Only auto-calculate if results are already shown
+            const results = document.getElementById('results');
+            if (results.classList.contains('show')) {
+                calculate();
+            }
+        }
+
+        function addProduct() {
+            const container = document.getElementById('productsContainer');
+            const newProduct = document.createElement('div');
+            newProduct.className = 'product-item';
+            newProduct.setAttribute('data-index', productIndex);
+            newProduct.innerHTML = `
+                <div class="input-group">
+                    <label>품명</label>
+                    <input type="text" class="product-name" value="품목 ${productIndex + 1}">
+                </div>
+                <div class="input-group">
+                    <label>단가($)</label>
+                    <input type="number" class="product-price" value="100" min="0" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>수량</label>
+                    <input type="number" class="product-quantity" value="10" min="1">
+                </div>
+                <button class="btn btn-danger remove-product" onclick="removeProduct(${productIndex})">삭제</button>
+            `;
+            container.appendChild(newProduct);
+            productIndex++;
+        }
+
+        function removeProduct(index) {
+            const products = document.querySelectorAll('.product-item');
+            if (products.length > 1) {
+                const product = document.querySelector(`.product-item[data-index="${index}"]`);
+                if (product) {
+                    product.remove();
+                }
+            } else {
+                alert('최소 1개의 품목이 필요합니다.');
+            }
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ko-KR').format(Math.round(num));
+        }
+
+        function calculate() {
+            // Get global parameters
+            const totalFreight = parseFloat(document.getElementById('totalFreight').value) || 0;
+            const marginRate = parseFloat(document.getElementById('marginRate').value) / 100 || 0;
+            const exchangeRate = parseFloat(document.getElementById('exchangeRate').value) || 0;
+
+            // Get all products
+            const products = [];
+            const productItems = document.querySelectorAll('.product-item');
+            
+            productItems.forEach(item => {
+                const name = item.querySelector('.product-name').value;
+                const price = parseFloat(item.querySelector('.product-price').value) || 0;
+                const quantity = parseInt(item.querySelector('.product-quantity').value) || 0;
+                
+                products.push({
+                    name: name,
+                    priceUSD: price,
+                    quantity: quantity,
+                    purchaseUnitPrice: price * exchangeRate,
+                    costKRW: price * exchangeRate * quantity
+                });
+            });
+
+            if (products.length === 0) {
+                alert('품목을 추가해주세요.');
+                return;
+            }
+
+            // Calculate total quantity
+            const totalQuantity = products.reduce((sum, p) => sum + p.quantity, 0);
+
+            // 배분운임단가 = 총운임 / 총수량 (모든 품목에 동일 적용)
+            const freightUnitPrice = totalQuantity > 0 ? totalFreight / totalQuantity : 0;
+
+            const equalResults = products.map(p => {
+                const freight = freightUnitPrice * p.quantity;
+                const sellingPricePerUnit = (p.costKRW + freight) / (1 - marginRate) / p.quantity;
+                const totalSellingPrice = sellingPricePerUnit * p.quantity;
+                const totalProfit = (sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice) * p.quantity;
+                return {
+                    ...p,
+                    freight: freight,
+                    freightUnitPrice: freightUnitPrice,
+                    sellingPricePerUnit: sellingPricePerUnit,
+                    totalSellingPrice: totalSellingPrice,
+                    totalProfit: totalProfit
+                };
+            });
+
+            // 비례배분 (원가기준): 품목 원가합 = 구입단가(원) * 수량
+            const totalCostAll = products.reduce((sum, p) => sum + p.costKRW, 0);
+
+            let propResults = null;
+            if (totalCostAll > 0 && products.length > 0) {
+                // Allocate freight proportionally; adjust last item to absorb rounding error
+                const rawFreights = products.map(p => totalFreight * (p.costKRW / totalCostAll));
+                const roundedFreights = rawFreights.map(f => Math.round(f));
+                const roundingDiff = totalFreight - roundedFreights.reduce((s, f) => s + f, 0);
+                roundedFreights[roundedFreights.length - 1] += roundingDiff;
+
+                propResults = products.map((p, i) => {
+                    const freight = roundedFreights[i];
+                    const freightUnitPrice = p.quantity > 0 ? freight / p.quantity : 0;
+                    const sellingPricePerUnit = (p.quantity > 0 && (1 - marginRate) > 0)
+                        ? (p.costKRW + freight) / (1 - marginRate) / p.quantity
+                        : 0;
+                    const totalSellingPrice = sellingPricePerUnit * p.quantity;
+                    const totalProfit = (sellingPricePerUnit - p.purchaseUnitPrice - freightUnitPrice) * p.quantity;
+                    return {
+                        ...p,
+                        freight: freight,
+                        freightUnitPrice: freightUnitPrice,
+                        sellingPricePerUnit: sellingPricePerUnit,
+                        totalSellingPrice: totalSellingPrice,
+                        totalProfit: totalProfit
+                    };
+                });
+            }
+
+            // Display results
+            displayResults(equalResults, propResults, totalFreight, marginRate);
+
+            // Store current state for saving
+            currentEqualResults = equalResults;
+            currentPropResults = propResults;
+            currentFreight = totalFreight;
+            currentMarginRate = marginRate;
+            currentExchangeRate = exchangeRate;
+            currentShippingMethod = document.getElementById('shippingMethod').value;
+            const wOpt = document.getElementById('weightOption');
+            currentWeightLabel = wOpt.options[wOpt.selectedIndex] ? wOpt.options[wOpt.selectedIndex].text : '';
+
+            // Show results section
+            document.getElementById('results').classList.add('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayResults(results, propResults, totalFreight, targetMarginRate) {
+            const tbody = document.getElementById('equalResultsBody');
+            tbody.innerHTML = '';
+
+            // Reset "check all" checkbox
+            const equalCheckAll = document.getElementById('equalCheckAll');
+            if (equalCheckAll) equalCheckAll.checked = false;
+
+            let totalSellingPrice = 0;
+
+            results.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="checkbox-col"><input type="checkbox" class="equal-item-check" data-index="${index}" onchange="updateSaveButtonState('equal')"></td>
+                    <td>${result.name}</td>
+                    <td>${result.quantity}</td>
+                    <td>${result.priceUSD}</td>
+                    <td>${formatNumber(result.purchaseUnitPrice)}</td>
+                    <td>${formatNumber(result.freightUnitPrice)}</td>
+                    <td>${formatNumber(result.sellingPricePerUnit)}</td>
+                    <td>${formatNumber(result.totalProfit)}</td>
+                    <td>${formatNumber(result.totalSellingPrice)}</td>
+                `;
+                tbody.appendChild(row);
+                totalSellingPrice += result.totalSellingPrice;
+            });
+
+            // Reset save button
+            updateSaveButtonState('equal');
+
+            // Calculate actual margin
+            const totalCost = results.reduce((sum, r) => sum + r.costKRW, 0);
+            const actualMargin = totalSellingPrice > 0
+                ? (totalSellingPrice - totalCost - totalFreight) / totalSellingPrice
+                : 0;
+            const actualMarginPercent = (actualMargin * 100).toFixed(2);
+
+            const totalAllocatedFreight = results.reduce((sum, r) => sum + r.freight, 0);
+            const FREIGHT_TOLERANCE = 1;
+            const MARGIN_TOLERANCE = 0.0001;
+
+            const totalProfit = results.reduce((sum, r) => sum + r.totalProfit, 0);
+
+            const summary = document.getElementById('equalSummary');
+            summary.innerHTML = `
+                <p><strong>총 원가:</strong> ${formatNumber(totalCost)}원</p>
+                <p><strong>총 운임:</strong> ${formatNumber(totalFreight)}원</p>
+                <p><strong>배분된 운임 합계:</strong> ${formatNumber(totalAllocatedFreight)}원 (검증: ${Math.abs(totalAllocatedFreight - totalFreight) < FREIGHT_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
+                <p><strong>총 판매가:</strong> ${formatNumber(totalSellingPrice)}원</p>
+                <p><strong>총 판매이익:</strong> ${formatNumber(totalProfit)}원</p>
+                <p><strong>희망 마진율:</strong> ${(targetMarginRate * 100).toFixed(2)}%</p>
+                <p><strong>실제 마진율:</strong> ${actualMarginPercent}% (검증: ${Math.abs(actualMargin - targetMarginRate) < MARGIN_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
+            `;
+
+            // Proportional allocation results
+            const propContainer = document.getElementById('propResultsContainer');
+            const propMessage = document.getElementById('propResultsMessage');
+
+            if (!propResults) {
+                propContainer.style.display = 'none';
+                propMessage.style.display = 'block';
+            } else {
+                propMessage.style.display = 'none';
+                propContainer.style.display = 'block';
+
+                const propTbody = document.getElementById('propResultsBody');
+                propTbody.innerHTML = '';
+
+                // Reset "check all" checkbox
+                const propCheckAll = document.getElementById('propCheckAll');
+                if (propCheckAll) propCheckAll.checked = false;
+
+                let propTotalSellingPrice = 0;
+
+                propResults.forEach((result, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="checkbox-col"><input type="checkbox" class="prop-item-check" data-index="${index}" onchange="updateSaveButtonState('prop')"></td>
+                        <td>${result.name}</td>
+                        <td>${result.quantity}</td>
+                        <td>${result.priceUSD}</td>
+                        <td>${formatNumber(result.purchaseUnitPrice)}</td>
+                        <td>${formatNumber(result.freightUnitPrice)}</td>
+                        <td>${formatNumber(result.sellingPricePerUnit)}</td>
+                        <td>${formatNumber(result.totalProfit)}</td>
+                        <td>${formatNumber(result.totalSellingPrice)}</td>
+                    `;
+                    propTbody.appendChild(row);
+                    propTotalSellingPrice += result.totalSellingPrice;
+                });
+
+                // Reset save button
+                updateSaveButtonState('prop');
+
+                const propTotalCost = propResults.reduce((sum, r) => sum + r.costKRW, 0);
+                const propActualMargin = propTotalSellingPrice > 0
+                    ? (propTotalSellingPrice - propTotalCost - totalFreight) / propTotalSellingPrice
+                    : 0;
+                const propActualMarginPercent = (propActualMargin * 100).toFixed(2);
+                const propTotalAllocated = propResults.reduce((sum, r) => sum + r.freight, 0);
+                const propTotalProfit = propResults.reduce((sum, r) => sum + r.totalProfit, 0);
+
+                const propSummary = document.getElementById('propSummary');
+                propSummary.innerHTML = `
+                    <p><strong>총 원가:</strong> ${formatNumber(propTotalCost)}원</p>
+                    <p><strong>총 운임:</strong> ${formatNumber(totalFreight)}원</p>
+                    <p><strong>배분된 운임 합계:</strong> ${formatNumber(propTotalAllocated)}원 (검증: ${Math.abs(propTotalAllocated - totalFreight) < FREIGHT_TOLERANCE ? '✓ 일치' : '✗ 불일치'})</p>
+                    <p><strong>총 판매가:</strong> ${formatNumber(propTotalSellingPrice)}원</p>
+                    <p><strong>총 판매이익:</strong> ${formatNumber(propTotalProfit)}원</p>
+                    <p><strong>희망 마진율:</strong> ${(targetMarginRate * 100).toFixed(2)}%</p>
+                    <p><strong>실제 마진율:</strong> ${propActualMarginPercent}%</p>
+                `;
+            }
+        }
+        function toggleAllCheckboxes(type, checked) {
+            document.querySelectorAll(`.${type}-item-check`).forEach(cb => {
+                cb.checked = checked;
+            });
+            const checkAll = document.getElementById(`${type}CheckAll`);
+            if (checkAll) checkAll.checked = checked;
+            updateSaveButtonState(type);
+        }
+
+        function updateSaveButtonState(type) {
+            const checkboxes = document.querySelectorAll(`.${type}-item-check`);
+            const saveBtn = document.getElementById(`${type}SaveBtn`);
+            if (!saveBtn) return;
+            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+            saveBtn.disabled = !anyChecked;
+        }
+
+        function getSavedQuotes() {
+            try {
+                return JSON.parse(localStorage.getItem('confirmedQuotes') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveSelectedItems(allocationType) {
+            const results = allocationType === 'equal' ? currentEqualResults : currentPropResults;
+            if (!results) {
+                alert('계산된 결과가 없습니다. 먼저 계산하기를 눌러주세요.');
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll(`.${allocationType}-item-check:checked`);
+            const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+
+            if (selectedIndices.length === 0) {
+                alert('저장할 품목을 선택해주세요.');
+                return;
+            }
+
+            const selectedItems = selectedIndices.map(i => ({
+                name: results[i].name,
+                quantity: results[i].quantity,
+                priceUSD: results[i].priceUSD,
+                purchaseUnitPrice: Math.round(results[i].purchaseUnitPrice),
+                freightUnitPrice: Math.round(results[i].freightUnitPrice),
+                sellingPricePerUnit: Math.round(results[i].sellingPricePerUnit),
+                totalSellingPrice: Math.round(results[i].totalSellingPrice),
+                totalProfit: Math.round(results[i].totalProfit)
+            }));
+
+            const quote = {
+                id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
+                savedAt: new Date().toISOString(),
+                shippingMethod: currentShippingMethod,
+                weightLabel: currentWeightLabel,
+                totalFreight: currentFreight,
+                marginRate: Math.round(currentMarginRate * 10000) / 100, // decimal → %
+                exchangeRate: currentExchangeRate,
+                allocationMethod: allocationType === 'equal' ? '균등배분' : '비례배분',
+                items: selectedItems
+            };
+
+            const quotes = getSavedQuotes();
+            quotes.unshift(quote);
+            localStorage.setItem('confirmedQuotes', JSON.stringify(quotes));
+
+            renderSavedQuotesList();
+
+            document.getElementById('savedQuotesSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteQuote(id) {
+            if (!confirm('이 확정견적을 삭제하시겠습니까?')) return;
+            const quotes = getSavedQuotes().filter(q => q.id !== id);
+            localStorage.setItem('confirmedQuotes', JSON.stringify(quotes));
+            renderSavedQuotesList();
+        }
+
+        function downloadCSV(id) {
+            const quotes = getSavedQuotes();
+            const quote = quotes.find(q => q.id === id);
+            if (!quote) return;
+
+            const BOM = '\uFEFF';
+            const headers = [
+                '견적ID', '저장일시', '운송방식', '무게구간', '총운임(원)',
+                '마진율(%)', '환율(원/$)', '배분방식',
+                '품목명', '수량', '구입단가($)', '구입단가(원)', '배분운임단가(원)',
+                '판매단가(원)', '총판매가(원)', '총판매이익(원)'
+            ];
+
+            const rows = quote.items.map(item => [
+                quote.id,
+                new Date(quote.savedAt).toLocaleString('ko-KR'),
+                quote.shippingMethod,
+                quote.weightLabel,
+                quote.totalFreight,
+                quote.marginRate,
+                quote.exchangeRate,
+                quote.allocationMethod,
+                item.name,
+                item.quantity,
+                item.priceUSD != null ? item.priceUSD : '',
+                item.purchaseUnitPrice,
+                item.freightUnitPrice,
+                item.sellingPricePerUnit,
+                item.totalSellingPrice,
+                item.totalProfit
+            ]);
+
+            const csvContent = BOM + [headers, ...rows]
+                .map(row => row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
+                .join('\r\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '확정견적_' + quote.id + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadAllCSV() {
+            const quotes = getSavedQuotes();
+            if (quotes.length === 0) {
+                alert('저장된 확정견적이 없습니다.');
+                return;
+            }
+
+            const BOM = '\uFEFF';
+            const headers = [
+                '견적ID', '저장일시', '운송방식', '무게구간', '총운임(원)',
+                '마진율(%)', '환율(원/$)', '배분방식',
+                '품목명', '수량', '구입단가($)', '구입단가(원)', '배분운임단가(원)',
+                '판매단가(원)', '총판매가(원)', '총판매이익(원)'
+            ];
+
+            const allRows = [];
+            quotes.forEach(quote => {
+                quote.items.forEach(item => {
+                    allRows.push([
+                        quote.id,
+                        new Date(quote.savedAt).toLocaleString('ko-KR'),
+                        quote.shippingMethod,
+                        quote.weightLabel,
+                        quote.totalFreight,
+                        quote.marginRate,
+                        quote.exchangeRate,
+                        quote.allocationMethod,
+                        item.name,
+                        item.quantity,
+                        item.priceUSD != null ? item.priceUSD : '',
+                        item.purchaseUnitPrice,
+                        item.freightUnitPrice,
+                        item.sellingPricePerUnit,
+                        item.totalSellingPrice,
+                        item.totalProfit
+                    ]);
+                });
+            });
+
+            const csvContent = BOM + [headers, ...allRows]
+                .map(row => row.map(cell => '"' + String(cell == null ? '' : cell).replace(/"/g, '""') + '"').join(','))
+                .join('\r\n');
+
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `확정견적_전체_${dateStr}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function toggleDetail(id) {
+            const detail = document.getElementById('detail-' + id);
+            const toggle = document.getElementById('toggle-' + id);
+            if (!detail) return;
+            if (detail.style.display === 'none') {
+                detail.style.display = 'block';
+                if (toggle) toggle.textContent = '▼ 품목 상세 접기';
+            } else {
+                detail.style.display = 'none';
+                if (toggle) toggle.textContent = '▶ 품목 상세 보기';
+            }
+        }
+
+        function renderSavedQuotesList() {
+            const container = document.getElementById('savedQuotesList');
+            const quotes = getSavedQuotes();
+
+            const downloadAllBtn = document.getElementById('downloadAllCsvBtn');
+            if (downloadAllBtn) downloadAllBtn.disabled = quotes.length === 0;
+
+            if (quotes.length === 0) {
+                container.innerHTML = '<p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>';
+                return;
+            }
+
+            container.innerHTML = quotes.map(quote => {
+                const totalSelling = quote.items.reduce((s, i) => s + i.totalSellingPrice, 0);
+                const totalProfit = quote.items.reduce((s, i) => s + i.totalProfit, 0);
+                const savedDate = new Date(quote.savedAt).toLocaleString('ko-KR');
+
+                const itemsHtml = quote.items.map(item => `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${formatNumber(item.purchaseUnitPrice)}</td>
+                        <td>${formatNumber(item.freightUnitPrice)}</td>
+                        <td>${formatNumber(item.sellingPricePerUnit)}</td>
+                        <td>${formatNumber(item.totalSellingPrice)}</td>
+                        <td>${formatNumber(item.totalProfit)}</td>
+                    </tr>
+                `).join('');
+
+                return `
+                    <div class="quote-card" id="quote-${quote.id}">
+                        <div class="quote-card-header">
+                            <div class="quote-card-summary">
+                                <strong>${savedDate}</strong> &nbsp;|&nbsp;
+                                <span>${quote.shippingMethod || '-'} ${quote.weightLabel || ''}</span>
+                                <span>총운임 ${formatNumber(quote.totalFreight)}원</span>
+                                <span>마진 ${quote.marginRate}%</span>
+                                <span>환율 ${formatNumber(quote.exchangeRate)}원/$</span>
+                                <span>배분: ${quote.allocationMethod}</span>
+                                <span>품목 ${quote.items.length}개</span>
+                                <span>총판매가 ${formatNumber(totalSelling)}원</span>
+                                <span>총이익 ${formatNumber(totalProfit)}원</span>
+                            </div>
+                            <div class="quote-card-actions">
+                                <button class="btn btn-csv" onclick="downloadCSV('${quote.id}')">CSV 다운로드</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteQuote('${quote.id}')">삭제</button>
+                            </div>
+                        </div>
+                        <span class="toggle-detail" id="toggle-${quote.id}" onclick="toggleDetail('${quote.id}')">▶ 품목 상세 보기</span>
+                        <div class="quote-items-detail" id="detail-${quote.id}" style="display:none;">
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>품명</th>
+                                            <th>수량</th>
+                                            <th>구입단가(원)</th>
+                                            <th>배분운임단가(원)</th>
+                                            <th>판매단가(원)</th>
+                                            <th>총판매가(원)</th>
+                                            <th>총판매이익(원)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${itemsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
 </html>
