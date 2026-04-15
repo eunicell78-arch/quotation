@@ -1654,7 +1654,7 @@
                     <div class="inv-field"><label>대금결제조건</label><input type="text" id="invPaymentTerms" value="${escHtml(d.paymentTerms || 'T/T in advance')}" placeholder="결제조건"></div>
                     <div class="inv-field"><label>유효기간</label><input type="text" id="invValidity" value="${escHtml(d.validity || '30일')}" placeholder="유효기간"></div>
                     <div class="inv-field"><label>납품장소</label><input type="text" id="invDeliveryPlace" value="${escHtml(d.deliveryPlace || '')}" placeholder="납품장소"></div>
-                    <div class="inv-field"><label>서명자명</label><input type="text" id="invSignName" value="${escHtml(d.signName || '')}" placeholder="서명자명"></div>
+                    <div class="inv-field" id="invSignNameField" style="display:${d.template === 'CU' ? '' : 'none'};"><label>서명자명</label><input type="text" id="invSignName" value="${escHtml(d.signName || '')}" placeholder="서명자명"></div>
                 </div>
 
                 <div class="inv-actions">
@@ -1672,6 +1672,8 @@
             });
             const cnField = document.getElementById('invCompanyNameField');
             if (cnField) cnField.style.display = tpl === 'CU' ? '' : 'none';
+            const snField = document.getElementById('invSignNameField');
+            if (snField) snField.style.display = tpl === 'CU' ? '' : 'none';
         }
 
         function setInvoiceTemplate(tpl) {
@@ -1936,7 +1938,7 @@
 
             const signBlock = (isNK || isHT)
                 ? `<div style="font-size:11px;margin-top:6px;">Jack Park</div>`
-                : (fd.senderName ? `<div style="font-size:11px;margin-top:6px;">${t(fd.senderName)}</div>` : '');
+                : ((fd.signName || fd.senderName) ? `<div style="font-size:11px;margin-top:6px;">${t(fd.signName || fd.senderName)}</div>` : '');
 
             return `<div style="width:794px;background:#fff;font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',Arial,sans-serif;padding:36px 40px;box-sizing:border-box;color:#111;line-height:1.4;">
 
