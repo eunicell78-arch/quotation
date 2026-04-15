@@ -1472,6 +1472,10 @@
         const VAT_RATE = 0.1;           // 10% VAT
         const MIN_INVOICE_ROWS = 8;     // minimum blank rows to pad in the A4 table
 
+        // Company logos embedded as base64 Data URIs (pdf-safe, no CORS issues)
+        const NK_LOGO_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCAyMDAgNTAiPgogIDx0ZXh0IHg9IjIiIHk9IjMwIiBmb250LWZhbWlseT0iQXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjIiIGZvbnQtd2VpZ2h0PSI5MDAiIGZpbGw9IiMwMDMwODciIGxldHRlci1zcGFjaW5nPSIxIj5ORVhUUk9OPC90ZXh0PgogIDx0ZXh0IHg9IjIiIHk9IjQ2IiBmb250LWZhbWlseT0iQXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMwMDMwODciIGxldHRlci1zcGFjaW5nPSIzIj5LT1JFQTwvdGV4dD4KPC9zdmc+';
+        const HT_LOGO_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCAyMDAgNTAiPgogIDxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiIHJ4PSIzIiBmaWxsPSIjMDA1RjYwIi8+CiAgPHRleHQgeD0iMTAwIiB5PSIyMSIgZm9udC1mYW1pbHk9IkFyaWFsLEhlbHZldGljYSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjkiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiNhMGQ4ZDgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGxldHRlci1zcGFjaW5nPSIyIj5IVU5URVJMSU5LIFRFQ0hOT0xPR1k8L3RleHQ+CiAgPHRleHQgeD0iMTAwIiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsLEhlbHZldGljYSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE3IiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjIiPkhVTlRFUkxJTks8L3RleHQ+Cjwvc3ZnPg==';
+
         function getTodayStr() {
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
@@ -1895,7 +1899,10 @@
 
             const themeColor  = isNK ? '#003087' : (isHT ? '#005F60' : '#2d3748');
             const lightBg     = isNK ? '#EBF0FB' : (isHT ? '#E0F0EF' : '#f0f0f4');
-            const companyName = isNK ? 'NEXTRON KOREA' : (isHT ? 'HUNTERLINK' : (fd.companyName || 'COMPANY').toUpperCase());
+            const logoSrc     = isNK ? NK_LOGO_URI : (isHT ? HT_LOGO_URI : '');
+            const headerLeft  = logoSrc
+                ? `<img src="${logoSrc}" style="height:28px;max-width:200px;object-fit:contain;display:block;" alt="logo">`
+                : `<div style="font-size:26px;font-weight:900;color:${themeColor};letter-spacing:2px;margin-bottom:4px;">${(fd.companyName || 'COMPANY').toUpperCase()}</div>`;
 
             const currency = fd.currency || 'KRW';
             const exchangeRate = fd.exchangeRate || 1500;
@@ -1945,7 +1952,7 @@
                 <!-- Header -->
                 <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:14px;border-bottom:3px solid ${themeColor};margin-bottom:22px;">
                     <div>
-                        <div style="font-size:26px;font-weight:900;color:${themeColor};letter-spacing:2px;margin-bottom:4px;">${companyName}</div>
+                        ${headerLeft}
                     </div>
                     <div style="font-size:30px;font-weight:700;color:${themeColor};letter-spacing:4px;">QUOTATION</div>
                 </div>
