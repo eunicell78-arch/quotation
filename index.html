@@ -409,7 +409,224 @@
                 padding: 15px;
             }
         }
+
+        /* ===== INVOICE MODULE STYLES ===== */
+        .btn-invoice {
+            background: linear-gradient(135deg, #6f42c1 0%, #9f4c8c 100%);
+            color: white;
+        }
+        .btn-invoice:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.4);
+        }
+        .invoice-panel-wrap {
+            background: #fff;
+            border: 2px solid #667eea;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+        }
+        .invoice-panel-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 12px;
+        }
+        .invoice-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.4em;
+            cursor: pointer;
+            color: #aaa;
+            line-height: 1;
+            padding: 0 4px;
+        }
+        .invoice-close-btn:hover { color: #dc3545; }
+        .inv-tpl-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .inv-tpl-btn {
+            padding: 10px 22px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        .inv-tpl-btn.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .inv-tpl-btn:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        .inv-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 6px;
+        }
+        @media (max-width: 640px) {
+            .inv-form-grid { grid-template-columns: 1fr; }
+        }
+        .inv-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .inv-field label {
+            font-size: 0.82em;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .inv-field input {
+            padding: 8px 10px;
+            border: 1.5px solid #ced4da;
+            border-radius: 6px;
+            font-size: 0.92em;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .inv-field input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .inv-section-title {
+            font-size: 0.92em;
+            font-weight: 700;
+            color: #495057;
+            margin: 20px 0 10px;
+            padding-bottom: 6px;
+            border-bottom: 1.5px solid #dee2e6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .inv-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88em;
+        }
+        .inv-items-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+        .inv-items-table td {
+            padding: 5px 6px;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        .inv-items-table tbody tr:nth-child(even) { background: #f8f9fa; }
+        .inv-items-table input {
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 0.9em;
+            font-family: inherit;
+        }
+        .inv-items-table input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .inv-totals-box {
+            display: flex;
+            justify-content: flex-end;
+            margin: 14px 0;
+        }
+        .inv-totals-inner {
+            min-width: 280px;
+            border: 1.5px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .inv-total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 14px;
+            font-size: 0.95em;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .inv-total-row:last-child { border-bottom: none; }
+        .inv-total-row.total-final {
+            font-weight: 700;
+            font-size: 1.05em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .inv-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 22px;
+            flex-wrap: wrap;
+        }
+        .btn-confirm {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        .btn-pdf-share {
+            background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
+            color: white;
+        }
+        .btn-pdf-share:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(232, 62, 140, 0.4);
+        }
+        .btn-pdf-download {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+        .btn-pdf-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
+        }
+        .pdf-loading {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+            font-size: 1.1em;
+        }
+        .pdf-loading-inner {
+            text-align: center;
+            background: rgba(0,0,0,0.4);
+            padding: 30px 40px;
+            border-radius: 12px;
+        }
     </style>
+    <!-- html2canvas: renders DOM to canvas for PDF capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF: generates the PDF file from the canvas image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -551,6 +768,7 @@
                     <p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>
                 </div>
             </div>
+            <div id="invoicePanelContainer"></div>
         </div>
     </div>
 
@@ -1133,6 +1351,7 @@
                                 <span>총이익 ${formatNumber(totalProfit)}원</span>
                             </div>
                             <div class="quote-card-actions">
+                                <button class="btn btn-invoice btn-sm" onclick="openInvoicePanel('${quote.id}')">📄 견적서 생성</button>
                                 <button class="btn btn-csv" onclick="downloadCSV('${quote.id}')">CSV 다운로드</button>
                                 <button class="btn btn-danger btn-sm" onclick="deleteQuote('${quote.id}')">삭제</button>
                             </div>
@@ -1161,6 +1380,450 @@
                     </div>
                 `;
             }).join('');
+        }
+        // ========= INVOICE / QUOTATION MODULE =========
+
+        let currentInvoiceQuoteId = null;
+        let currentInvoiceQuote = null;
+        let currentInvoiceTemplate = 'NK';
+
+        function getTodayStr() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        }
+
+        function generateQuoteNumber(prefix) {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+            const dayKey = `${prefix}-${dateStr}`;
+            let counters = {};
+            try { counters = JSON.parse(localStorage.getItem('quoteNoCounters') || '{}'); } catch(e) {}
+            const next = (counters[dayKey] || 0) + 1;
+            counters[dayKey] = next;
+            localStorage.setItem('quoteNoCounters', JSON.stringify(counters));
+            return `${prefix}-${dateStr}-${String(next).padStart(3,'0')}`;
+        }
+
+        function getQuoteDocuments() {
+            try { return JSON.parse(localStorage.getItem('quoteDocuments') || '{}'); } catch(e) { return {}; }
+        }
+
+        function getQuoteDocument(quoteId) {
+            return getQuoteDocuments()[quoteId] || null;
+        }
+
+        function saveQuoteDocument(quoteId, docData) {
+            const docs = getQuoteDocuments();
+            docs[quoteId] = docData;
+            localStorage.setItem('quoteDocuments', JSON.stringify(docs));
+        }
+
+        function escHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function openInvoicePanel(quoteId) {
+            const quotes = getSavedQuotes();
+            const quote = quotes.find(q => q.id === quoteId);
+            if (!quote) return;
+
+            currentInvoiceQuoteId = quoteId;
+            currentInvoiceQuote = quote;
+
+            const existingDoc = getQuoteDocument(quoteId);
+            currentInvoiceTemplate = existingDoc ? (existingDoc.template || 'NK') : 'NK';
+
+            const quoteNo = existingDoc
+                ? existingDoc.quoteNo
+                : generateQuoteNumber(currentInvoiceTemplate === 'HT' ? 'HT' : 'NK');
+
+            const container = document.getElementById('invoicePanelContainer');
+            container.innerHTML = buildInvoicePanelHTML(quote, existingDoc, quoteNo);
+            updateTplButtons(currentInvoiceTemplate);
+            recalcInvoiceTotals();
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeInvoicePanel() {
+            const container = document.getElementById('invoicePanelContainer');
+            if (container) container.innerHTML = '';
+            currentInvoiceQuoteId = null;
+            currentInvoiceQuote = null;
+        }
+
+        function buildInvoicePanelHTML(quote, doc, quoteNo) {
+            const today = getTodayStr();
+            const d = doc || {};
+
+            const itemRows = quote.items.map((item, i) => {
+                const di = (d.items || [])[i] || {};
+                const amount = item.sellingPricePerUnit * item.quantity;
+                return `<tr>
+                    <td style="text-align:center;width:36px;">${i + 1}</td>
+                    <td style="min-width:90px;">${escHtml(item.name)}</td>
+                    <td><input type="text" class="inv-item-input" data-row="${i}" data-field="description" value="${escHtml(di.description || '')}" placeholder="설명"></td>
+                    <td><input type="text" class="inv-item-input" data-row="${i}" data-field="maker" value="${escHtml(di.maker || '')}" placeholder="제조사"></td>
+                    <td style="text-align:center;width:50px;">${item.quantity}</td>
+                    <td style="text-align:right;white-space:nowrap;min-width:90px;">${formatNumber(item.sellingPricePerUnit)}</td>
+                    <td style="text-align:right;white-space:nowrap;min-width:100px;" class="inv-amount-cell" data-up="${item.sellingPricePerUnit}" data-qty="${item.quantity}">${formatNumber(amount)}</td>
+                    <td><input type="text" class="inv-item-input" data-row="${i}" data-field="lt" value="${escHtml(di.lt || '')}" placeholder="납기"></td>
+                </tr>`;
+            }).join('');
+
+            return `<div class="invoice-panel-wrap" id="invoicePanel">
+                <div class="invoice-panel-title">
+                    <span>📄 견적서 생성</span>
+                    <button class="invoice-close-btn" onclick="closeInvoicePanel()" title="닫기">✕</button>
+                </div>
+
+                <div class="inv-section-title">양식 선택</div>
+                <div class="inv-tpl-selector">
+                    <button class="inv-tpl-btn" id="tplBtnNK" onclick="setInvoiceTemplate('NK')">Nextron Korea (NK)</button>
+                    <button class="inv-tpl-btn" id="tplBtnHT" onclick="setInvoiceTemplate('HT')">Hunterlink (HT)</button>
+                </div>
+
+                <div class="inv-section-title">고객 정보</div>
+                <div class="inv-form-grid">
+                    <div class="inv-field"><label>수신 (To)</label><input type="text" id="invTo" value="${escHtml(d.to || '')}" placeholder="회사명"></div>
+                    <div class="inv-field"><label>담당 (Attn)</label><input type="text" id="invAttn" value="${escHtml(d.attn || '')}" placeholder="담당자명"></div>
+                    <div class="inv-field"><label>전화번호 (Tel)</label><input type="text" id="invTel" value="${escHtml(d.tel || '')}" placeholder="전화번호"></div>
+                    <div class="inv-field"><label>모바일 (Mobile)</label><input type="text" id="invMobile" value="${escHtml(d.mobile || '')}" placeholder="모바일 번호"></div>
+                </div>
+
+                <div class="inv-section-title">견적 정보</div>
+                <div class="inv-form-grid">
+                    <div class="inv-field"><label>견적번호</label><input type="text" id="invQuoteNo" value="${escHtml(quoteNo)}" placeholder="견적번호"></div>
+                    <div class="inv-field"><label>견적일자</label><input type="date" id="invQuoteDate" value="${escHtml(d.quoteDate || today)}"></div>
+                </div>
+
+                <div class="inv-section-title">품목</div>
+                <div class="table-wrapper">
+                    <table class="inv-items-table">
+                        <thead><tr>
+                            <th style="width:36px;">NO.</th>
+                            <th>PART NO.</th>
+                            <th>DESCRIPTION</th>
+                            <th>MAKER</th>
+                            <th style="width:50px;">Q'TY</th>
+                            <th style="min-width:90px;">U/P (원)</th>
+                            <th style="min-width:100px;">AMOUNT (원)</th>
+                            <th>L/T</th>
+                        </tr></thead>
+                        <tbody id="invItemsBody">${itemRows}</tbody>
+                    </table>
+                </div>
+
+                <div class="inv-totals-box">
+                    <div class="inv-totals-inner">
+                        <div class="inv-total-row"><span>합계</span><span id="invSubtotal">0 원</span></div>
+                        <div class="inv-total-row"><span>부가세 (10%)</span><span id="invVat">0 원</span></div>
+                        <div class="inv-total-row total-final"><span>총합계</span><span id="invTotal">0 원</span></div>
+                    </div>
+                </div>
+
+                <div class="inv-section-title">거래 조건</div>
+                <div class="inv-form-grid">
+                    <div class="inv-field"><label>대금결제조건</label><input type="text" id="invPaymentTerms" value="${escHtml(d.paymentTerms || 'T/T in advance')}" placeholder="결제조건"></div>
+                    <div class="inv-field"><label>유효기간</label><input type="text" id="invValidity" value="${escHtml(d.validity || '30일')}" placeholder="유효기간"></div>
+                    <div class="inv-field"><label>납품장소</label><input type="text" id="invDeliveryPlace" value="${escHtml(d.deliveryPlace || '')}" placeholder="납품장소"></div>
+                    <div class="inv-field"><label>서명명</label><input type="text" id="invSignName" value="${escHtml(d.signName || 'Jack Park')}" placeholder="서명자명"></div>
+                </div>
+
+                <div class="inv-actions">
+                    <button class="btn btn-confirm" onclick="confirmInvoice()">✔ 확정 (저장)</button>
+                    <button class="btn btn-pdf-share" onclick="generateInvoicePDF('share')">📤 PDF 공유</button>
+                    <button class="btn btn-pdf-download" onclick="generateInvoicePDF('download')">⬇ PDF 다운로드</button>
+                </div>
+            </div>`;
+        }
+
+        function updateTplButtons(tpl) {
+            const nkBtn = document.getElementById('tplBtnNK');
+            const htBtn = document.getElementById('tplBtnHT');
+            if (nkBtn) nkBtn.className = 'inv-tpl-btn' + (tpl === 'NK' ? ' active' : '');
+            if (htBtn) htBtn.className = 'inv-tpl-btn' + (tpl === 'HT' ? ' active' : '');
+        }
+
+        function setInvoiceTemplate(tpl) {
+            currentInvoiceTemplate = tpl;
+            updateTplButtons(tpl);
+            const prefix = tpl === 'HT' ? 'HT' : 'NK';
+            const noInput = document.getElementById('invQuoteNo');
+            if (noInput) noInput.value = generateQuoteNumber(prefix);
+        }
+
+        function recalcInvoiceTotals() {
+            let subtotal = 0;
+            document.querySelectorAll('.inv-amount-cell').forEach(cell => {
+                const up = parseFloat(cell.dataset.up) || 0;
+                const qty = parseFloat(cell.dataset.qty) || 0;
+                subtotal += up * qty;
+                cell.textContent = formatNumber(up * qty);
+            });
+            const vat = Math.round(subtotal * 0.1);
+            const total = Math.round(subtotal) + vat;
+            const subtotalEl = document.getElementById('invSubtotal');
+            const vatEl = document.getElementById('invVat');
+            const totalEl = document.getElementById('invTotal');
+            if (subtotalEl) subtotalEl.textContent = formatNumber(subtotal) + ' 원';
+            if (vatEl) vatEl.textContent = formatNumber(vat) + ' 원';
+            if (totalEl) totalEl.textContent = formatNumber(total) + ' 원';
+        }
+
+        function collectInvoiceFormData() {
+            if (!currentInvoiceQuote) return null;
+            const itemMap = {};
+            document.querySelectorAll('.inv-item-input').forEach(inp => {
+                const r = inp.dataset.row;
+                const f = inp.dataset.field;
+                if (!itemMap[r]) itemMap[r] = {};
+                itemMap[r][f] = inp.value;
+            });
+            const items = currentInvoiceQuote.items.map((item, i) => ({
+                name: item.name,
+                quantity: item.quantity,
+                unitPrice: item.sellingPricePerUnit,
+                description: (itemMap[i] || {}).description || '',
+                maker: (itemMap[i] || {}).maker || '',
+                lt: (itemMap[i] || {}).lt || ''
+            }));
+            return {
+                template: currentInvoiceTemplate,
+                quoteNo: (document.getElementById('invQuoteNo') || {}).value || '',
+                quoteDate: (document.getElementById('invQuoteDate') || {}).value || getTodayStr(),
+                to: (document.getElementById('invTo') || {}).value || '',
+                attn: (document.getElementById('invAttn') || {}).value || '',
+                tel: (document.getElementById('invTel') || {}).value || '',
+                mobile: (document.getElementById('invMobile') || {}).value || '',
+                paymentTerms: (document.getElementById('invPaymentTerms') || {}).value || '',
+                validity: (document.getElementById('invValidity') || {}).value || '',
+                deliveryPlace: (document.getElementById('invDeliveryPlace') || {}).value || '',
+                signName: (document.getElementById('invSignName') || {}).value || '',
+                items: items
+            };
+        }
+
+        function confirmInvoice() {
+            const fd = collectInvoiceFormData();
+            if (!fd || !currentInvoiceQuoteId) return;
+            saveQuoteDocument(currentInvoiceQuoteId, fd);
+            alert('✅ 견적서가 저장되었습니다.');
+            renderSavedQuotesList();
+        }
+
+        async function generateInvoicePDF(action) {
+            if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                alert('PDF 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            const fd = collectInvoiceFormData();
+            if (!fd) return;
+
+            const subtotal = Math.round(fd.items.reduce((s, it) => s + it.unitPrice * it.quantity, 0));
+            const vat = Math.round(subtotal * 0.1);
+            const total = subtotal + vat;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'pdf-loading';
+            overlay.innerHTML = '<div class="pdf-loading-inner"><div style="font-size:2.5em;margin-bottom:10px;">📄</div><div>PDF 생성 중...</div></div>';
+            document.body.appendChild(overlay);
+
+            let captureEl = null;
+            try {
+                captureEl = document.createElement('div');
+                captureEl.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;z-index:-1;';
+                captureEl.innerHTML = buildA4TemplateHTML(fd, subtotal, vat, total);
+                document.body.appendChild(captureEl);
+
+                await new Promise(r => setTimeout(r, 400));
+
+                const canvas = await html2canvas(captureEl, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    width: 794,
+                    windowWidth: 794
+                });
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                const pdfW = 210;
+                const pdfH = Math.min((canvas.height / canvas.width) * pdfW, 297);
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+
+                const filename = `견적서_${fd.quoteNo || 'QUOTE'}.pdf`;
+                const blob = pdf.output('blob');
+
+                document.body.removeChild(overlay);
+                document.body.removeChild(captureEl);
+                captureEl = null;
+
+                if (action === 'share') {
+                    await sharePDFFile(blob, filename);
+                } else {
+                    downloadPDFFile(blob, filename);
+                }
+            } catch (err) {
+                console.error('PDF generation error:', err);
+                if (document.body.contains(overlay)) document.body.removeChild(overlay);
+                if (captureEl && document.body.contains(captureEl)) document.body.removeChild(captureEl);
+                alert('PDF 생성 중 오류가 발생했습니다.\n' + err.message);
+            }
+        }
+
+        async function sharePDFFile(blob, filename) {
+            const file = new File([blob], filename, { type: 'application/pdf' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({ files: [file], title: filename });
+                    return;
+                } catch (e) {
+                    if (e.name === 'AbortError') return;
+                    console.warn('Share API failed, falling back to download:', e);
+                }
+            }
+            downloadPDFFile(blob, filename);
+        }
+
+        function downloadPDFFile(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function buildA4TemplateHTML(fd, subtotal, vat, total) {
+            const isNK = fd.template !== 'HT';
+            const themeColor  = isNK ? '#003087' : '#005F60';
+            const lightBg     = isNK ? '#EBF0FB' : '#E0F0EF';
+            const companyName = isNK ? 'NEXTRON KOREA' : 'HUNTERLINK';
+            const companyInfo = isNK
+                ? 'Tel: 02-0000-0000 &nbsp;|&nbsp; E-mail: info@nextronkorea.com'
+                : 'Tel: +61-2-0000-0000 &nbsp;|&nbsp; E-mail: info@hunterlink.com.au';
+
+            const t = str => (str == null ? '' : String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;'));
+
+            const itemRows = fd.items.map((item, i) => `
+                <tr style="background:${i % 2 === 0 ? '#fff' : lightBg};">
+                    <td style="text-align:center;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${i + 1}</td>
+                    <td style="padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.name)}</td>
+                    <td style="padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.description)}</td>
+                    <td style="padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.maker)}</td>
+                    <td style="text-align:center;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${item.quantity}</td>
+                    <td style="text-align:right;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;white-space:nowrap;">&#x20A9; ${formatNumber(item.unitPrice)}</td>
+                    <td style="text-align:right;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;white-space:nowrap;">&#x20A9; ${formatNumber(item.unitPrice * item.quantity)}</td>
+                    <td style="text-align:center;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.lt)}</td>
+                </tr>`).join('');
+
+            const blankRows = Array(Math.max(0, 8 - fd.items.length)).fill(`
+                <tr style="height:26px;">
+                    <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
+                    <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
+                    <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
+                    <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
+                </tr>`).join('');
+
+            return `<div style="width:794px;background:#fff;font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',Arial,sans-serif;padding:36px 40px;box-sizing:border-box;color:#111;line-height:1.4;">
+
+                <!-- Header -->
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:14px;border-bottom:3px solid ${themeColor};margin-bottom:22px;">
+                    <div>
+                        <div style="font-size:26px;font-weight:900;color:${themeColor};letter-spacing:2px;margin-bottom:4px;">${companyName}</div>
+                        <div style="font-size:10px;color:#666;">${companyInfo}</div>
+                    </div>
+                    <div style="font-size:30px;font-weight:700;color:${themeColor};letter-spacing:4px;">QUOTATION</div>
+                </div>
+
+                <!-- Customer + Quote Info -->
+                <div style="display:flex;gap:16px;margin-bottom:20px;">
+                    <div style="flex:1;border:1.5px solid #ddd;border-radius:6px;overflow:hidden;">
+                        <div style="background:${themeColor};color:#fff;padding:7px 12px;font-size:11px;font-weight:700;">고객 정보</div>
+                        <div style="padding:10px 12px;">
+                            <table style="border-collapse:collapse;width:100%;font-size:11px;">
+                                <tr><td style="color:#666;padding:2px 0;width:55px;">수신</td><td style="padding:2px 0;font-weight:600;">${t(fd.to)}</td></tr>
+                                <tr><td style="color:#666;padding:2px 0;">담당</td><td style="padding:2px 0;">${t(fd.attn)}</td></tr>
+                                <tr><td style="color:#666;padding:2px 0;">Tel</td><td style="padding:2px 0;">${t(fd.tel)}</td></tr>
+                                <tr><td style="color:#666;padding:2px 0;">Mobile</td><td style="padding:2px 0;">${t(fd.mobile)}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div style="flex:1;border:1.5px solid #ddd;border-radius:6px;overflow:hidden;">
+                        <div style="background:${themeColor};color:#fff;padding:7px 12px;font-size:11px;font-weight:700;">견적 정보</div>
+                        <div style="padding:10px 12px;">
+                            <table style="border-collapse:collapse;width:100%;font-size:11px;">
+                                <tr><td style="color:#666;padding:2px 0;width:65px;">견적번호</td><td style="padding:2px 0;font-weight:600;">${t(fd.quoteNo)}</td></tr>
+                                <tr><td style="color:#666;padding:2px 0;">견적일자</td><td style="padding:2px 0;">${t(fd.quoteDate)}</td></tr>
+                                <tr><td style="color:#666;padding:2px 0;">유효기간</td><td style="padding:2px 0;">${t(fd.validity)}</td></tr>
+                                <tr><td style="color:#666;padding:2px 0;">결제조건</td><td style="padding:2px 0;">${t(fd.paymentTerms)}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Table -->
+                <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+                    <thead>
+                        <tr style="background:${themeColor};color:#fff;">
+                            <th style="padding:8px 4px;text-align:center;width:36px;border:1px solid ${themeColor};font-size:11px;">NO.</th>
+                            <th style="padding:8px 4px;text-align:left;width:120px;border:1px solid ${themeColor};font-size:11px;">PART NO.</th>
+                            <th style="padding:8px 4px;text-align:left;border:1px solid ${themeColor};font-size:11px;">DESCRIPTION</th>
+                            <th style="padding:8px 4px;text-align:left;width:80px;border:1px solid ${themeColor};font-size:11px;">MAKER</th>
+                            <th style="padding:8px 4px;text-align:center;width:42px;border:1px solid ${themeColor};font-size:11px;">Q'TY</th>
+                            <th style="padding:8px 4px;text-align:right;width:88px;border:1px solid ${themeColor};font-size:11px;">U/P</th>
+                            <th style="padding:8px 4px;text-align:right;width:98px;border:1px solid ${themeColor};font-size:11px;">AMOUNT</th>
+                            <th style="padding:8px 4px;text-align:center;width:52px;border:1px solid ${themeColor};font-size:11px;">L/T</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemRows}${blankRows}</tbody>
+                </table>
+
+                <!-- Totals -->
+                <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+                    <div style="min-width:260px;">
+                        <div style="display:flex;justify-content:space-between;padding:7px 12px;border:1px solid #ddd;border-bottom:none;font-size:11.5px;background:#f8f9fa;">
+                            <span>합계</span><span style="font-weight:600;">&#x20A9; ${formatNumber(subtotal)}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:7px 12px;border:1px solid #ddd;border-bottom:none;font-size:11.5px;background:#f8f9fa;">
+                            <span>부가세 (10%)</span><span style="font-weight:600;">&#x20A9; ${formatNumber(vat)}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:9px 12px;border:1.5px solid ${themeColor};font-size:13px;font-weight:700;background:${themeColor};color:#fff;">
+                            <span>총합계</span><span>&#x20A9; ${formatNumber(total)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div style="border:1.5px solid #ddd;border-radius:6px;overflow:hidden;margin-bottom:20px;font-size:11px;">
+                    <div style="background:${themeColor};color:#fff;padding:7px 12px;font-weight:700;font-size:11px;">거래 조건</div>
+                    <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <div><span style="color:#666;">대금결제조건: </span>${t(fd.paymentTerms)}</div>
+                        <div><span style="color:#666;">유효기간: </span>${t(fd.validity)}</div>
+                        <div><span style="color:#666;">납품장소: </span>${t(fd.deliveryPlace)}</div>
+                    </div>
+                </div>
+
+                <!-- Signature -->
+                <div style="display:flex;justify-content:flex-end;">
+                    <div style="text-align:center;min-width:180px;padding-top:10px;border-top:2px solid ${themeColor};">
+                        <div style="font-size:12px;font-weight:700;color:${themeColor};">${companyName}</div>
+                        <div style="font-size:11px;margin-top:6px;">${t(fd.signName)}</div>
+                    </div>
+                </div>
+            </div>`;
         }
     </script>
 </body>
