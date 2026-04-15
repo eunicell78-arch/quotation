@@ -770,6 +770,7 @@
                 <h2>저장된 확정견적</h2>
                 <div class="save-controls">
                     <button class="btn btn-csv" id="downloadAllCsvBtn" disabled onclick="downloadAllCSV()">전체 CSV 다운로드</button>
+                    <button class="btn btn-invoice" id="createSelectedInvoiceBtn" disabled onclick="openCombinedInvoicePanel()">선택 견적서 생성</button>
                 </div>
                 <div id="savedQuotesList">
                     <p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>
@@ -1325,6 +1326,9 @@
             const downloadAllBtn = document.getElementById('downloadAllCsvBtn');
             if (downloadAllBtn) downloadAllBtn.disabled = quotes.length === 0;
 
+            const createSelectedBtn = document.getElementById('createSelectedInvoiceBtn');
+            if (createSelectedBtn) createSelectedBtn.disabled = true;
+
             if (quotes.length === 0) {
                 container.innerHTML = '<p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>';
                 return;
@@ -1350,6 +1354,9 @@
                 return `
                     <div class="quote-card" id="quote-${quote.id}">
                         <div class="quote-card-header">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;" aria-label="견적서 생성에 포함할 견적 선택">
+                                <input type="checkbox" class="quote-select-checkbox" data-id="${quote.id}" onchange="onQuoteSelectionChange()" style="width:16px;height:16px;cursor:pointer;">
+                            </label>
                             <div class="quote-card-summary">
                                 <strong>${savedDate}</strong> &nbsp;|&nbsp;
                                 <span>${quote.shippingMethod || '-'} ${quote.weightLabel || ''}</span>
@@ -1391,6 +1398,51 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function onQuoteSelectionChange() {
+            const checked = document.querySelectorAll('.quote-select-checkbox:checked');
+            const btn = document.getElementById('createSelectedInvoiceBtn');
+            if (btn) btn.disabled = checked.length === 0;
+        }
+
+        function openCombinedInvoicePanel() {
+            const checked = document.querySelectorAll('.quote-select-checkbox:checked');
+            if (checked.length === 0) return;
+
+            const quoteIds = Array.from(checked).map(cb => cb.dataset.id);
+            const allQuotes = getSavedQuotes();
+
+            const combinedItems = [];
+            quoteIds.forEach(id => {
+                const found = allQuotes.find(q => q.id === id);
+                if (found) {
+                    found.items.forEach(item => combinedItems.push(Object.assign({}, item)));
+                }
+            });
+
+            if (combinedItems.length === 0) {
+                alert('선택된 견적에 품목이 없습니다.');
+                return;
+            }
+
+            const combinedId = 'COMBINED-' + Date.now();
+            const syntheticQuote = {
+                id: combinedId,
+                items: combinedItems,
+                sourceQuoteIds: quoteIds
+            };
+
+            currentInvoiceQuoteId = combinedId;
+            currentInvoiceQuote = syntheticQuote;
+            currentInvoiceTemplate = 'NK';
+
+            const quoteNo = generateQuoteNumber('NK');
+            const container = document.getElementById('invoicePanelContainer');
+            container.innerHTML = buildInvoicePanelHTML(syntheticQuote, null, quoteNo);
+            updateTplButtons(currentInvoiceTemplate);
+            recalcInvoiceTotals();
+            container.scrollIntoView({ behavior: 'smooth' });
         }
         // ========= INVOICE / QUOTATION MODULE =========
 
@@ -1699,6 +1751,7 @@
                 validity: (document.getElementById('invValidity') || {}).value || '',
                 deliveryPlace: (document.getElementById('invDeliveryPlace') || {}).value || '',
                 signName: (document.getElementById('invSignName') || {}).value || '',
+                sourceQuoteIds: (currentInvoiceQuote && currentInvoiceQuote.sourceQuoteIds) || null,
                 items: items
             };
         }
@@ -1824,11 +1877,7 @@
             const themeColor  = isNK ? '#003087' : (isHT ? '#005F60' : '#2d3748');
             const lightBg     = isNK ? '#EBF0FB' : (isHT ? '#E0F0EF' : '#f0f0f4');
             const companyName = isNK ? 'NEXTRON KOREA' : (isHT ? 'HUNTERLINK' : (fd.companyName || 'COMPANY').toUpperCase());
-            const companyInfo = isNK
-                ? 'Tel: 02-0000-0000 &nbsp;|&nbsp; E-mail: info@nextronkorea.com'
-                : (isHT
-                    ? 'Tel: +61-2-0000-0000 &nbsp;|&nbsp; E-mail: info@hunterlink.com.au'
-                    : '');
+
 
             const currency = fd.currency || 'KRW';
             const exchangeRate = fd.exchangeRate || 1500;
@@ -1869,10 +1918,14 @@
                 <tr><td style="color:#666;padding:2px 0;width:65px;">담당</td><td style="padding:2px 0;">${t(fd.senderName)}</td></tr>
                 <tr><td style="color:#666;padding:2px 0;">모바일</td><td style="padding:2px 0;">${t(fd.senderMobile)}</td></tr>` : '';
 
-            const signBlock = fd.senderName
-                ? `<div style="font-size:11px;margin-top:6px;">${t(fd.senderName)}</div>
-                ${fd.senderMobile ? `<div style="font-size:11px;margin-top:2px;">${t(fd.senderMobile)}</div>` : ''}`
-                : (fd.signName ? `<div style="font-size:11px;margin-top:6px;">${t(fd.signName)}</div>` : '');
+            const signPersonName = (isNK || isHT) ? 'Jack Park' : (fd.senderName || '');
+            let signBlock = '';
+            if (signPersonName) {
+                signBlock = `<div style="font-size:11px;margin-top:6px;">${t(signPersonName)}</div>`;
+                if (isCU && fd.senderMobile) {
+                    signBlock += `<div style="font-size:11px;margin-top:2px;">${t(fd.senderMobile)}</div>`;
+                }
+            }
 
             return `<div style="width:794px;background:#fff;font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',Arial,sans-serif;padding:36px 40px;box-sizing:border-box;color:#111;line-height:1.4;">
 
@@ -1880,7 +1933,6 @@
                 <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:14px;border-bottom:3px solid ${themeColor};margin-bottom:22px;">
                     <div>
                         <div style="font-size:26px;font-weight:900;color:${themeColor};letter-spacing:2px;margin-bottom:4px;">${companyName}</div>
-                        <div style="font-size:10px;color:#666;">${companyInfo}</div>
                     </div>
                     <div style="font-size:30px;font-weight:700;color:${themeColor};letter-spacing:4px;">QUOTATION</div>
                 </div>
