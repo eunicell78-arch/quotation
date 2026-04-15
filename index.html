@@ -624,9 +624,13 @@
         }
     </style>
     <!-- html2canvas: renders DOM to canvas for PDF capture -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- jsPDF: generates the PDF file from the canvas image -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+            integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- jsPDF: generates the PDF file from the canvas image (4.2.1 – no known vulnerabilities) -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"
+            integrity="sha512-plOdviVmws4Y3JAvbnpfKb2hVxKM1lCwsi3vmElYRj+tiDLffZ4FVUj5a8vyKJ9pIgl8JCAHEJ4D1iUKBecswg=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <div class="container">
@@ -1387,12 +1391,19 @@
         let currentInvoiceQuote = null;
         let currentInvoiceTemplate = 'NK';
 
+        // Module-level constants
+        const VAT_RATE = 0.1;           // 10% VAT
+        const MIN_INVOICE_ROWS = 8;     // minimum blank rows to pad in the A4 table
+
         function getTodayStr() {
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
         }
 
         function generateQuoteNumber(prefix) {
+            // Note: localStorage is not atomic; in the single-user, single-tab context of this app
+            // concurrent counter updates are effectively impossible. Multi-tab races could theoretically
+            // produce duplicates, but are acceptable for this internal tool.
             const now = new Date();
             const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
             const dayKey = `${prefix}-${dateStr}`;
@@ -1440,7 +1451,7 @@
 
             const quoteNo = existingDoc
                 ? existingDoc.quoteNo
-                : generateQuoteNumber(currentInvoiceTemplate === 'HT' ? 'HT' : 'NK');
+                : generateQuoteNumber(currentInvoiceTemplate);
 
             const container = document.getElementById('invoicePanelContainer');
             container.innerHTML = buildInvoicePanelHTML(quote, existingDoc, quoteNo);
@@ -1531,7 +1542,7 @@
                     <div class="inv-field"><label>대금결제조건</label><input type="text" id="invPaymentTerms" value="${escHtml(d.paymentTerms || 'T/T in advance')}" placeholder="결제조건"></div>
                     <div class="inv-field"><label>유효기간</label><input type="text" id="invValidity" value="${escHtml(d.validity || '30일')}" placeholder="유효기간"></div>
                     <div class="inv-field"><label>납품장소</label><input type="text" id="invDeliveryPlace" value="${escHtml(d.deliveryPlace || '')}" placeholder="납품장소"></div>
-                    <div class="inv-field"><label>서명명</label><input type="text" id="invSignName" value="${escHtml(d.signName || 'Jack Park')}" placeholder="서명자명"></div>
+                    <div class="inv-field"><label>서명자명</label><input type="text" id="invSignName" value="${escHtml(d.signName || 'Jack Park')}" placeholder="서명자명"></div>
                 </div>
 
                 <div class="inv-actions">
@@ -1552,9 +1563,8 @@
         function setInvoiceTemplate(tpl) {
             currentInvoiceTemplate = tpl;
             updateTplButtons(tpl);
-            const prefix = tpl === 'HT' ? 'HT' : 'NK';
             const noInput = document.getElementById('invQuoteNo');
-            if (noInput) noInput.value = generateQuoteNumber(prefix);
+            if (noInput) noInput.value = generateQuoteNumber(tpl);
         }
 
         function recalcInvoiceTotals() {
@@ -1565,7 +1575,7 @@
                 subtotal += up * qty;
                 cell.textContent = formatNumber(up * qty);
             });
-            const vat = Math.round(subtotal * 0.1);
+            const vat = Math.round(subtotal * VAT_RATE);
             const total = Math.round(subtotal) + vat;
             const subtotalEl = document.getElementById('invSubtotal');
             const vatEl = document.getElementById('invVat');
@@ -1624,8 +1634,12 @@
             const fd = collectInvoiceFormData();
             if (!fd) return;
 
+            // Named constants for PDF generation parameters
+            const DOM_SETTLE_MS = 400;     // wait for browser to fully lay out the off-screen template
+            const PDF_IMG_QUALITY = 0.92;  // JPEG quality: 0–1; 0.92 balances size vs. clarity
+
             const subtotal = Math.round(fd.items.reduce((s, it) => s + it.unitPrice * it.quantity, 0));
-            const vat = Math.round(subtotal * 0.1);
+            const vat = Math.round(subtotal * VAT_RATE);
             const total = subtotal + vat;
 
             const overlay = document.createElement('div');
@@ -1640,7 +1654,8 @@
                 captureEl.innerHTML = buildA4TemplateHTML(fd, subtotal, vat, total);
                 document.body.appendChild(captureEl);
 
-                await new Promise(r => setTimeout(r, 400));
+                // Allow browser to fully render the off-screen element before capture
+                await new Promise(r => setTimeout(r, DOM_SETTLE_MS));
 
                 const canvas = await html2canvas(captureEl, {
                     scale: 2,
@@ -1653,7 +1668,7 @@
 
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-                const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                const imgData = canvas.toDataURL('image/jpeg', PDF_IMG_QUALITY);
                 const pdfW = 210;
                 const pdfH = Math.min((canvas.height / canvas.width) * pdfW, 297);
                 pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
@@ -1693,6 +1708,7 @@
         }
 
         function downloadPDFFile(blob, filename) {
+            const REVOKE_DELAY_MS = 1000; // give the browser time to start the download before revoking
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1700,7 +1716,7 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
         }
 
         function buildA4TemplateHTML(fd, subtotal, vat, total) {
@@ -1729,7 +1745,7 @@
                     <td style="text-align:center;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.lt)}</td>
                 </tr>`).join('');
 
-            const blankRows = Array(Math.max(0, 8 - fd.items.length)).fill(`
+            const blankRows = Array(Math.max(0, MIN_INVOICE_ROWS - fd.items.length)).fill(`
                 <tr style="height:26px;">
                     <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
                     <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
