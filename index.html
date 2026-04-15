@@ -495,15 +495,18 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .inv-field input {
+        .inv-field input,
+        .inv-field select {
             padding: 8px 10px;
             border: 1.5px solid #ced4da;
             border-radius: 6px;
             font-size: 0.92em;
             font-family: inherit;
             transition: border-color 0.2s;
+            background: #fff;
         }
-        .inv-field input:focus {
+        .inv-field input:focus,
+        .inv-field select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -900,6 +903,10 @@
 
         function formatNumber(num) {
             return new Intl.NumberFormat('ko-KR').format(Math.round(num));
+        }
+
+        function formatUSD(num) {
+            return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
         function calculate() {
@@ -1471,20 +1478,30 @@
             const today = getTodayStr();
             const d = doc || {};
 
+            const currency = d.currency || 'KRW';
+            const isUSD = currency === 'USD';
+            const exchangeRateDefault = d.exchangeRate || quote.exchangeRate || 1500;
+
             const itemRows = quote.items.map((item, i) => {
                 const di = (d.items || [])[i] || {};
-                const amount = item.sellingPricePerUnit * item.quantity;
+                const displayUp = isUSD ? (item.sellingPricePerUnit / exchangeRateDefault) : item.sellingPricePerUnit;
+                const displayAmt = displayUp * item.quantity;
+                const upStr = isUSD ? `$ ${formatUSD(displayUp)}` : `&#x20A9; ${formatNumber(displayUp)}`;
+                const amtStr = isUSD ? `$ ${formatUSD(displayAmt)}` : `&#x20A9; ${formatNumber(displayAmt)}`;
                 return `<tr>
                     <td style="text-align:center;width:36px;">${i + 1}</td>
                     <td style="min-width:90px;">${escHtml(item.name)}</td>
                     <td><input type="text" class="inv-item-input" data-row="${i}" data-field="description" value="${escHtml(di.description || '')}" placeholder="설명"></td>
                     <td><input type="text" class="inv-item-input" data-row="${i}" data-field="maker" value="${escHtml(di.maker || '')}" placeholder="제조사"></td>
                     <td style="text-align:center;width:50px;">${item.quantity}</td>
-                    <td style="text-align:right;white-space:nowrap;min-width:90px;">${formatNumber(item.sellingPricePerUnit)}</td>
-                    <td style="text-align:right;white-space:nowrap;min-width:100px;" class="inv-amount-cell" data-up="${item.sellingPricePerUnit}" data-qty="${item.quantity}">${formatNumber(amount)}</td>
+                    <td style="text-align:right;white-space:nowrap;min-width:90px;" class="inv-up-cell" data-up="${item.sellingPricePerUnit}">${upStr}</td>
+                    <td style="text-align:right;white-space:nowrap;min-width:100px;" class="inv-amount-cell" data-up="${item.sellingPricePerUnit}" data-qty="${item.quantity}">${amtStr}</td>
                     <td><input type="text" class="inv-item-input" data-row="${i}" data-field="lt" value="${escHtml(di.lt || '')}" placeholder="납기"></td>
                 </tr>`;
             }).join('');
+
+            const upHeaderText = isUSD ? `U/P ($)` : `U/P (원)`;
+            const amtHeaderText = isUSD ? `AMOUNT ($)` : `AMOUNT (원)`;
 
             return `<div class="invoice-panel-wrap" id="invoicePanel">
                 <div class="invoice-panel-title">
@@ -1496,14 +1513,39 @@
                 <div class="inv-tpl-selector">
                     <button class="inv-tpl-btn" id="tplBtnNK" onclick="setInvoiceTemplate('NK')">Nextron Korea (NK)</button>
                     <button class="inv-tpl-btn" id="tplBtnHT" onclick="setInvoiceTemplate('HT')">Hunterlink (HT)</button>
+                    <button class="inv-tpl-btn" id="tplBtnCU" onclick="setInvoiceTemplate('CU')">사용자 입력 (CU)</button>
+                </div>
+                <div class="inv-form-grid" id="invCompanyNameField" style="display:${d.template === 'CU' ? '' : 'none'};">
+                    <div class="inv-field"><label>회사명</label><input type="text" id="invCompanyName" value="${escHtml(d.companyName || '')}" placeholder="회사명 입력"></div>
                 </div>
 
-                <div class="inv-section-title">고객 정보</div>
+                <div class="inv-section-title">통화 설정</div>
+                <div class="inv-form-grid">
+                    <div class="inv-field">
+                        <label>통화</label>
+                        <select id="invCurrency" onchange="onCurrencyChange()">
+                            <option value="KRW" ${currency === 'KRW' ? 'selected' : ''}>KRW (₩ 원화)</option>
+                            <option value="USD" ${currency === 'USD' ? 'selected' : ''}>USD ($ 달러)</option>
+                        </select>
+                    </div>
+                    <div class="inv-field" id="invExchangeRateField" style="${isUSD ? '' : 'display:none;'}">
+                        <label>환율 (원/$)</label>
+                        <input type="number" id="invExchangeRate" value="${escHtml(String(exchangeRateDefault))}" min="0" step="0.01" oninput="recalcInvoiceTotals()">
+                    </div>
+                </div>
+
+                <div class="inv-section-title">수신 고객 정보</div>
                 <div class="inv-form-grid">
                     <div class="inv-field"><label>수신 (To)</label><input type="text" id="invTo" value="${escHtml(d.to || '')}" placeholder="회사명"></div>
                     <div class="inv-field"><label>담당 (Attn)</label><input type="text" id="invAttn" value="${escHtml(d.attn || '')}" placeholder="담당자명"></div>
                     <div class="inv-field"><label>전화번호 (Tel)</label><input type="text" id="invTel" value="${escHtml(d.tel || '')}" placeholder="전화번호"></div>
                     <div class="inv-field"><label>모바일 (Mobile)</label><input type="text" id="invMobile" value="${escHtml(d.mobile || '')}" placeholder="모바일 번호"></div>
+                </div>
+
+                <div class="inv-section-title">발신 정보</div>
+                <div class="inv-form-grid">
+                    <div class="inv-field"><label>발신 담당자</label><input type="text" id="invSenderName" value="${escHtml(d.senderName || '')}" placeholder="담당자명"></div>
+                    <div class="inv-field"><label>발신 핸드폰</label><input type="text" id="invSenderMobile" value="${escHtml(d.senderMobile || '')}" placeholder="핸드폰번호"></div>
                 </div>
 
                 <div class="inv-section-title">견적 정보</div>
@@ -1521,8 +1563,8 @@
                             <th>DESCRIPTION</th>
                             <th>MAKER</th>
                             <th style="width:50px;">Q'TY</th>
-                            <th style="min-width:90px;">U/P (원)</th>
-                            <th style="min-width:100px;">AMOUNT (원)</th>
+                            <th style="min-width:90px;" id="invUpHeader">${upHeaderText}</th>
+                            <th style="min-width:100px;" id="invAmtHeader">${amtHeaderText}</th>
                             <th>L/T</th>
                         </tr></thead>
                         <tbody id="invItemsBody">${itemRows}</tbody>
@@ -1531,9 +1573,9 @@
 
                 <div class="inv-totals-box">
                     <div class="inv-totals-inner">
-                        <div class="inv-total-row"><span>합계</span><span id="invSubtotal">0 원</span></div>
-                        <div class="inv-total-row"><span>부가세 (10%)</span><span id="invVat">0 원</span></div>
-                        <div class="inv-total-row total-final"><span>총합계</span><span id="invTotal">0 원</span></div>
+                        <div class="inv-total-row"><span>합계</span><span id="invSubtotal">-</span></div>
+                        <div class="inv-total-row"><span>부가세 (10%)</span><span id="invVat">-</span></div>
+                        <div class="inv-total-row total-final"><span>총합계</span><span id="invTotal">-</span></div>
                     </div>
                 </div>
 
@@ -1542,7 +1584,7 @@
                     <div class="inv-field"><label>대금결제조건</label><input type="text" id="invPaymentTerms" value="${escHtml(d.paymentTerms || 'T/T in advance')}" placeholder="결제조건"></div>
                     <div class="inv-field"><label>유효기간</label><input type="text" id="invValidity" value="${escHtml(d.validity || '30일')}" placeholder="유효기간"></div>
                     <div class="inv-field"><label>납품장소</label><input type="text" id="invDeliveryPlace" value="${escHtml(d.deliveryPlace || '')}" placeholder="납품장소"></div>
-                    <div class="inv-field"><label>서명자명</label><input type="text" id="invSignName" value="${escHtml(d.signName || 'Jack Park')}" placeholder="서명자명"></div>
+                    <div class="inv-field"><label>서명자명</label><input type="text" id="invSignName" value="${escHtml(d.signName || '')}" placeholder="서명자명"></div>
                 </div>
 
                 <div class="inv-actions">
@@ -1554,35 +1596,73 @@
         }
 
         function updateTplButtons(tpl) {
-            const nkBtn = document.getElementById('tplBtnNK');
-            const htBtn = document.getElementById('tplBtnHT');
-            if (nkBtn) nkBtn.className = 'inv-tpl-btn' + (tpl === 'NK' ? ' active' : '');
-            if (htBtn) htBtn.className = 'inv-tpl-btn' + (tpl === 'HT' ? ' active' : '');
+            ['NK', 'HT', 'CU'].forEach(t => {
+                const btn = document.getElementById(`tplBtn${t}`);
+                if (btn) btn.className = 'inv-tpl-btn' + (tpl === t ? ' active' : '');
+            });
+            const cnField = document.getElementById('invCompanyNameField');
+            if (cnField) cnField.style.display = tpl === 'CU' ? '' : 'none';
         }
 
         function setInvoiceTemplate(tpl) {
             currentInvoiceTemplate = tpl;
             updateTplButtons(tpl);
             const noInput = document.getElementById('invQuoteNo');
-            if (noInput) noInput.value = generateQuoteNumber(tpl);
+            const prefix = tpl === 'CU' ? 'CU' : tpl;
+            if (noInput) noInput.value = generateQuoteNumber(prefix);
+        }
+
+        function onCurrencyChange() {
+            const currency = (document.getElementById('invCurrency') || {}).value || 'KRW';
+            const rateField = document.getElementById('invExchangeRateField');
+            if (rateField) rateField.style.display = currency === 'USD' ? '' : 'none';
+            const upHeader = document.getElementById('invUpHeader');
+            const amtHeader = document.getElementById('invAmtHeader');
+            if (upHeader) upHeader.textContent = currency === 'KRW' ? 'U/P (원)' : 'U/P ($)';
+            if (amtHeader) amtHeader.textContent = currency === 'KRW' ? 'AMOUNT (원)' : 'AMOUNT ($)';
+            recalcInvoiceTotals();
         }
 
         function recalcInvoiceTotals() {
+            const currency = (document.getElementById('invCurrency') || {}).value || 'KRW';
+            const exchangeRate = parseFloat((document.getElementById('invExchangeRate') || {}).value) || 1500;
+            const isUSD = currency === 'USD';
+
+            document.querySelectorAll('.inv-up-cell').forEach(cell => {
+                const upKRW = parseFloat(cell.dataset.up) || 0;
+                const displayUp = isUSD ? (upKRW / exchangeRate) : upKRW;
+                cell.textContent = isUSD ? `$ ${formatUSD(displayUp)}` : `₩ ${formatNumber(upKRW)}`;
+            });
+
             let subtotal = 0;
             document.querySelectorAll('.inv-amount-cell').forEach(cell => {
-                const up = parseFloat(cell.dataset.up) || 0;
+                const upKRW = parseFloat(cell.dataset.up) || 0;
                 const qty = parseFloat(cell.dataset.qty) || 0;
-                subtotal += up * qty;
-                cell.textContent = formatNumber(up * qty);
+                const displayUp = isUSD ? (upKRW / exchangeRate) : upKRW;
+                const amount = displayUp * qty;
+                subtotal += amount;
+                cell.textContent = isUSD ? `$ ${formatUSD(amount)}` : `₩ ${formatNumber(amount)}`;
             });
-            const vat = Math.round(subtotal * VAT_RATE);
-            const total = Math.round(subtotal) + vat;
+
+            const vat = isUSD
+                ? Math.round(subtotal * VAT_RATE * 100) / 100
+                : Math.round(subtotal * VAT_RATE);
+            const total = isUSD
+                ? Math.round((subtotal + vat) * 100) / 100
+                : Math.round(subtotal) + vat;
+
             const subtotalEl = document.getElementById('invSubtotal');
             const vatEl = document.getElementById('invVat');
             const totalEl = document.getElementById('invTotal');
-            if (subtotalEl) subtotalEl.textContent = formatNumber(subtotal) + ' 원';
-            if (vatEl) vatEl.textContent = formatNumber(vat) + ' 원';
-            if (totalEl) totalEl.textContent = formatNumber(total) + ' 원';
+            if (isUSD) {
+                if (subtotalEl) subtotalEl.textContent = `$ ${formatUSD(subtotal)}`;
+                if (vatEl) vatEl.textContent = `$ ${formatUSD(vat)}`;
+                if (totalEl) totalEl.textContent = `$ ${formatUSD(total)}`;
+            } else {
+                if (subtotalEl) subtotalEl.textContent = `₩ ${formatNumber(subtotal)}`;
+                if (vatEl) vatEl.textContent = `₩ ${formatNumber(vat)}`;
+                if (totalEl) totalEl.textContent = `₩ ${formatNumber(total)}`;
+            }
         }
 
         function collectInvoiceFormData() {
@@ -1610,6 +1690,11 @@
                 attn: (document.getElementById('invAttn') || {}).value || '',
                 tel: (document.getElementById('invTel') || {}).value || '',
                 mobile: (document.getElementById('invMobile') || {}).value || '',
+                senderName: (document.getElementById('invSenderName') || {}).value || '',
+                senderMobile: (document.getElementById('invSenderMobile') || {}).value || '',
+                currency: (document.getElementById('invCurrency') || {}).value || 'KRW',
+                exchangeRate: parseFloat((document.getElementById('invExchangeRate') || {}).value) || 1500,
+                companyName: (document.getElementById('invCompanyName') || {}).value || '',
                 paymentTerms: (document.getElementById('invPaymentTerms') || {}).value || '',
                 validity: (document.getElementById('invValidity') || {}).value || '',
                 deliveryPlace: (document.getElementById('invDeliveryPlace') || {}).value || '',
@@ -1638,9 +1723,20 @@
             const DOM_SETTLE_MS = 400;     // wait for browser to fully lay out the off-screen template
             const PDF_IMG_QUALITY = 0.92;  // JPEG quality: 0–1; 0.92 balances size vs. clarity
 
-            const subtotal = Math.round(fd.items.reduce((s, it) => s + it.unitPrice * it.quantity, 0));
-            const vat = Math.round(subtotal * VAT_RATE);
-            const total = subtotal + vat;
+            const currency = fd.currency || 'KRW';
+            const exchangeRate = fd.exchangeRate || 1500;
+            const isUSD = currency === 'USD';
+
+            let subtotal, vat, total;
+            if (isUSD) {
+                subtotal = Math.round(fd.items.reduce((s, it) => s + (it.unitPrice / exchangeRate) * it.quantity, 0) * 100) / 100;
+                vat = Math.round(subtotal * VAT_RATE * 100) / 100;
+                total = Math.round((subtotal + vat) * 100) / 100;
+            } else {
+                subtotal = Math.round(fd.items.reduce((s, it) => s + it.unitPrice * it.quantity, 0));
+                vat = Math.round(subtotal * VAT_RATE);
+                total = subtotal + vat;
+            }
 
             const overlay = document.createElement('div');
             overlay.className = 'pdf-loading';
@@ -1720,30 +1816,46 @@
         }
 
         function buildA4TemplateHTML(fd, subtotal, vat, total) {
-            const isNK = fd.template !== 'HT';
-            const themeColor  = isNK ? '#003087' : '#005F60';
-            const lightBg     = isNK ? '#EBF0FB' : '#E0F0EF';
-            const companyName = isNK ? 'NEXTRON KOREA' : 'HUNTERLINK';
+            const tpl = fd.template || 'NK';
+            const isNK = tpl === 'NK';
+            const isHT = tpl === 'HT';
+            const isCU = tpl === 'CU';
+
+            const themeColor  = isNK ? '#003087' : (isHT ? '#005F60' : '#2d3748');
+            const lightBg     = isNK ? '#EBF0FB' : (isHT ? '#E0F0EF' : '#f0f0f4');
+            const companyName = isNK ? 'NEXTRON KOREA' : (isHT ? 'HUNTERLINK' : (fd.companyName || 'COMPANY').toUpperCase());
             const companyInfo = isNK
                 ? 'Tel: 02-0000-0000 &nbsp;|&nbsp; E-mail: info@nextronkorea.com'
-                : 'Tel: +61-2-0000-0000 &nbsp;|&nbsp; E-mail: info@hunterlink.com.au';
+                : (isHT
+                    ? 'Tel: +61-2-0000-0000 &nbsp;|&nbsp; E-mail: info@hunterlink.com.au'
+                    : '');
+
+            const currency = fd.currency || 'KRW';
+            const exchangeRate = fd.exchangeRate || 1500;
+            const isUSD = currency === 'USD';
 
             const t = str => (str == null ? '' : String(str)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;'));
 
-            const itemRows = fd.items.map((item, i) => `
+            const fmtAmt = n => isUSD ? `$ ${formatUSD(n)}` : `&#x20A9; ${formatNumber(n)}`;
+
+            const itemRows = fd.items.map((item, i) => {
+                const displayUp = isUSD ? (item.unitPrice / exchangeRate) : item.unitPrice;
+                const displayAmt = displayUp * item.quantity;
+                return `
                 <tr style="background:${i % 2 === 0 ? '#fff' : lightBg};">
                     <td style="text-align:center;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${i + 1}</td>
                     <td style="padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.name)}</td>
                     <td style="padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.description)}</td>
                     <td style="padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.maker)}</td>
                     <td style="text-align:center;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${item.quantity}</td>
-                    <td style="text-align:right;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;white-space:nowrap;">&#x20A9; ${formatNumber(item.unitPrice)}</td>
-                    <td style="text-align:right;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;white-space:nowrap;">&#x20A9; ${formatNumber(item.unitPrice * item.quantity)}</td>
+                    <td style="text-align:right;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;white-space:nowrap;">${fmtAmt(displayUp)}</td>
+                    <td style="text-align:right;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;white-space:nowrap;">${fmtAmt(displayAmt)}</td>
                     <td style="text-align:center;padding:6px 4px;border:1px solid #ccc;font-size:10.5px;">${t(item.lt)}</td>
-                </tr>`).join('');
+                </tr>`;
+            }).join('');
 
             const blankRows = Array(Math.max(0, MIN_INVOICE_ROWS - fd.items.length)).fill(`
                 <tr style="height:26px;">
@@ -1752,6 +1864,15 @@
                     <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
                     <td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td>
                 </tr>`).join('');
+
+            const senderRows = (fd.senderName || fd.senderMobile) ? `
+                <tr><td style="color:#666;padding:2px 0;width:65px;">담당</td><td style="padding:2px 0;">${t(fd.senderName)}</td></tr>
+                <tr><td style="color:#666;padding:2px 0;">모바일</td><td style="padding:2px 0;">${t(fd.senderMobile)}</td></tr>` : '';
+
+            const signBlock = fd.senderName
+                ? `<div style="font-size:11px;margin-top:6px;">${t(fd.senderName)}</div>
+                ${fd.senderMobile ? `<div style="font-size:11px;margin-top:2px;">${t(fd.senderMobile)}</div>` : ''}`
+                : (fd.signName ? `<div style="font-size:11px;margin-top:6px;">${t(fd.signName)}</div>` : '');
 
             return `<div style="width:794px;background:#fff;font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',Arial,sans-serif;padding:36px 40px;box-sizing:border-box;color:#111;line-height:1.4;">
 
@@ -1785,6 +1906,7 @@
                                 <tr><td style="color:#666;padding:2px 0;">견적일자</td><td style="padding:2px 0;">${t(fd.quoteDate)}</td></tr>
                                 <tr><td style="color:#666;padding:2px 0;">유효기간</td><td style="padding:2px 0;">${t(fd.validity)}</td></tr>
                                 <tr><td style="color:#666;padding:2px 0;">결제조건</td><td style="padding:2px 0;">${t(fd.paymentTerms)}</td></tr>
+                                ${senderRows}
                             </table>
                         </div>
                     </div>
@@ -1811,13 +1933,13 @@
                 <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
                     <div style="min-width:260px;">
                         <div style="display:flex;justify-content:space-between;padding:7px 12px;border:1px solid #ddd;border-bottom:none;font-size:11.5px;background:#f8f9fa;">
-                            <span>합계</span><span style="font-weight:600;">&#x20A9; ${formatNumber(subtotal)}</span>
+                            <span>합계</span><span style="font-weight:600;">${fmtAmt(subtotal)}</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;padding:7px 12px;border:1px solid #ddd;border-bottom:none;font-size:11.5px;background:#f8f9fa;">
-                            <span>부가세 (10%)</span><span style="font-weight:600;">&#x20A9; ${formatNumber(vat)}</span>
+                            <span>부가세 (10%)</span><span style="font-weight:600;">${fmtAmt(vat)}</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;padding:9px 12px;border:1.5px solid ${themeColor};font-size:13px;font-weight:700;background:${themeColor};color:#fff;">
-                            <span>총합계</span><span>&#x20A9; ${formatNumber(total)}</span>
+                            <span>총합계</span><span>${fmtAmt(total)}</span>
                         </div>
                     </div>
                 </div>
@@ -1836,7 +1958,7 @@
                 <div style="display:flex;justify-content:flex-end;">
                     <div style="text-align:center;min-width:180px;padding-top:10px;border-top:2px solid ${themeColor};">
                         <div style="font-size:12px;font-weight:700;color:${themeColor};">${companyName}</div>
-                        <div style="font-size:11px;margin-top:6px;">${t(fd.signName)}</div>
+                        ${signBlock}
                     </div>
                 </div>
             </div>`;
