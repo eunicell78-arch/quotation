@@ -425,6 +425,12 @@
             transform: none;
             box-shadow: none;
         }
+        .quote-select-cb {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
         .invoice-panel-wrap {
             background: #fff;
             border: 2px solid #667eea;
@@ -1362,7 +1368,7 @@
                     <div class="quote-card" id="quote-${quote.id}">
                         <div class="quote-card-header">
                             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
-                                <input type="checkbox" class="quote-select-cb" data-id="${quote.id}" onchange="updateMergeButtonState()" style="width:18px;height:18px;flex-shrink:0;cursor:pointer;">
+                                <input type="checkbox" class="quote-select-cb" data-id="${quote.id}" onchange="updateMergeButtonState()">
                                 <div class="quote-card-summary">
                                     <strong>${savedDate}</strong> &nbsp;|&nbsp;
                                     <span>${quote.shippingMethod || '-'} ${quote.weightLabel || ''}</span>
@@ -1433,7 +1439,7 @@
             const mergedQuote = {
                 id: '__merged__',
                 items: mergedItems,
-                exchangeRate: selectedQuotes[0].exchangeRate || 1500,
+                exchangeRate: selectedQuotes[0].exchangeRate || DEFAULT_EXCHANGE_RATE,
                 sourceQuoteIds: selectedIds
             };
 
@@ -1458,6 +1464,7 @@
         // Module-level constants
         const VAT_RATE = 0.1;           // 10% VAT
         const MIN_INVOICE_ROWS = 8;     // minimum blank rows to pad in the A4 table
+        const DEFAULT_EXCHANGE_RATE = 1500; // default KRW/USD exchange rate
 
         function getTodayStr() {
             const now = new Date();
@@ -1537,7 +1544,7 @@
 
             const currency = d.currency || 'KRW';
             const isUSD = currency === 'USD';
-            const exchangeRateDefault = d.exchangeRate || quote.exchangeRate || 1500;
+            const exchangeRateDefault = d.exchangeRate || quote.exchangeRate || DEFAULT_EXCHANGE_RATE;
 
             const itemRows = quote.items.map((item, i) => {
                 const di = (d.items || [])[i] || {};
@@ -1682,7 +1689,7 @@
 
         function recalcInvoiceTotals() {
             const currency = (document.getElementById('invCurrency') || {}).value || 'KRW';
-            const exchangeRate = parseFloat((document.getElementById('invExchangeRate') || {}).value) || 1500;
+            const exchangeRate = parseFloat((document.getElementById('invExchangeRate') || {}).value) || DEFAULT_EXCHANGE_RATE;
             const isUSD = currency === 'USD';
 
             document.querySelectorAll('.inv-up-cell').forEach(cell => {
@@ -1750,7 +1757,7 @@
                 senderName: (document.getElementById('invSenderName') || {}).value || '',
                 senderMobile: (document.getElementById('invSenderMobile') || {}).value || '',
                 currency: (document.getElementById('invCurrency') || {}).value || 'KRW',
-                exchangeRate: parseFloat((document.getElementById('invExchangeRate') || {}).value) || 1500,
+                exchangeRate: parseFloat((document.getElementById('invExchangeRate') || {}).value) || DEFAULT_EXCHANGE_RATE,
                 companyName: (document.getElementById('invCompanyName') || {}).value || '',
                 paymentTerms: (document.getElementById('invPaymentTerms') || {}).value || '',
                 validity: (document.getElementById('invValidity') || {}).value || '',
@@ -1781,7 +1788,7 @@
             const PDF_IMG_QUALITY = 0.92;  // JPEG quality: 0–1; 0.92 balances size vs. clarity
 
             const currency = fd.currency || 'KRW';
-            const exchangeRate = fd.exchangeRate || 1500;
+            const exchangeRate = fd.exchangeRate || DEFAULT_EXCHANGE_RATE;
             const isUSD = currency === 'USD';
 
             let subtotal, vat, total;
@@ -1884,7 +1891,7 @@
             const companyInfo = '';
 
             const currency = fd.currency || 'KRW';
-            const exchangeRate = fd.exchangeRate || 1500;
+            const exchangeRate = fd.exchangeRate || DEFAULT_EXCHANGE_RATE;
             const isUSD = currency === 'USD';
 
             const t = str => (str == null ? '' : String(str)
