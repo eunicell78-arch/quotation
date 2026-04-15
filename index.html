@@ -769,6 +769,9 @@
             <div class="saved-quotes-section" id="savedQuotesSection">
                 <h2>저장된 확정견적</h2>
                 <div class="save-controls">
+                    <button class="btn btn-secondary btn-sm" onclick="toggleAllQuoteSelection(true)">전체 선택</button>
+                    <button class="btn btn-secondary btn-sm" onclick="toggleAllQuoteSelection(false)">선택 해제</button>
+                    <button class="btn btn-invoice btn-sm" id="mergeInvoiceBtn" disabled onclick="openMergedInvoicePanel()">선택 견적서 생성</button>
                     <button class="btn btn-csv" id="downloadAllCsvBtn" disabled onclick="downloadAllCSV()">전체 CSV 다운로드</button>
                 </div>
                 <div id="savedQuotesList">
@@ -1325,6 +1328,10 @@
             const downloadAllBtn = document.getElementById('downloadAllCsvBtn');
             if (downloadAllBtn) downloadAllBtn.disabled = quotes.length === 0;
 
+            // Reset selection state on every re-render
+            selectedQuoteIds = new Set();
+            updateMergeButtonState();
+
             if (quotes.length === 0) {
                 container.innerHTML = '<p class="no-quotes-msg">저장된 확정견적이 없습니다.</p>';
                 return;
@@ -1350,16 +1357,19 @@
                 return `
                     <div class="quote-card" id="quote-${quote.id}">
                         <div class="quote-card-header">
-                            <div class="quote-card-summary">
-                                <strong>${savedDate}</strong> &nbsp;|&nbsp;
-                                <span>${quote.shippingMethod || '-'} ${quote.weightLabel || ''}</span>
-                                <span>총운임 ${formatNumber(quote.totalFreight)}원</span>
-                                <span>마진 ${quote.marginRate}%</span>
-                                <span>환율 ${formatNumber(quote.exchangeRate)}원/$</span>
-                                <span>배분: ${quote.allocationMethod}</span>
-                                <span>품목 ${quote.items.length}개</span>
-                                <span>총판매가 ${formatNumber(totalSelling)}원</span>
-                                <span>총이익 ${formatNumber(totalProfit)}원</span>
+                            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                                <input type="checkbox" class="quote-select-cb" data-id="${quote.id}" onchange="toggleQuoteSelection('${quote.id}', this.checked)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
+                                <div class="quote-card-summary">
+                                    <strong>${savedDate}</strong> &nbsp;|&nbsp;
+                                    <span>${quote.shippingMethod || '-'} ${quote.weightLabel || ''}</span>
+                                    <span>총운임 ${formatNumber(quote.totalFreight)}원</span>
+                                    <span>마진 ${quote.marginRate}%</span>
+                                    <span>환율 ${formatNumber(quote.exchangeRate)}원/$</span>
+                                    <span>배분: ${quote.allocationMethod}</span>
+                                    <span>품목 ${quote.items.length}개</span>
+                                    <span>총판매가 ${formatNumber(totalSelling)}원</span>
+                                    <span>총이익 ${formatNumber(totalProfit)}원</span>
+                                </div>
                             </div>
                             <div class="quote-card-actions">
                                 <button class="btn btn-invoice btn-sm" onclick="openInvoicePanel('${quote.id}')">📄 견적서 생성</button>
@@ -1392,11 +1402,71 @@
                 `;
             }).join('');
         }
+
+        function toggleQuoteSelection(id, checked) {
+            if (checked) {
+                selectedQuoteIds.add(id);
+            } else {
+                selectedQuoteIds.delete(id);
+            }
+            updateMergeButtonState();
+        }
+
+        function toggleAllQuoteSelection(checked) {
+            const cbs = document.querySelectorAll('.quote-select-cb');
+            cbs.forEach(cb => {
+                cb.checked = checked;
+                if (checked) selectedQuoteIds.add(cb.dataset.id);
+                else selectedQuoteIds.delete(cb.dataset.id);
+            });
+            updateMergeButtonState();
+        }
+
+        function updateMergeButtonState() {
+            const btn = document.getElementById('mergeInvoiceBtn');
+            if (btn) btn.disabled = selectedQuoteIds.size === 0;
+        }
+
+        function openMergedInvoicePanel() {
+            const ids = Array.from(selectedQuoteIds);
+            if (ids.length === 0) {
+                alert('견적을 선택해주세요.');
+                return;
+            }
+
+            const allQuotes = getSavedQuotes();
+            // Maintain display order (getSavedQuotes returns newest-first)
+            const selected = allQuotes.filter(q => ids.includes(q.id));
+            if (selected.length === 0) return;
+
+            // Flatten items from all selected quotes in order
+            const mergedItems = selected.flatMap(q => q.items);
+
+            const mergedId = `MERGED-${Date.now()}`;
+            const mergedQuote = {
+                id: mergedId,
+                items: mergedItems,
+                exchangeRate: selected[0].exchangeRate || 1500,
+                sourceQuoteIds: ids
+            };
+
+            currentInvoiceQuoteId = mergedId;
+            currentInvoiceQuote = mergedQuote;
+            currentInvoiceTemplate = 'NK';
+
+            const quoteNo = generateQuoteNumber(currentInvoiceTemplate);
+            const container = document.getElementById('invoicePanelContainer');
+            container.innerHTML = buildInvoicePanelHTML(mergedQuote, null, quoteNo);
+            updateTplButtons(currentInvoiceTemplate);
+            recalcInvoiceTotals();
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
         // ========= INVOICE / QUOTATION MODULE =========
 
         let currentInvoiceQuoteId = null;
         let currentInvoiceQuote = null;
         let currentInvoiceTemplate = 'NK';
+        let selectedQuoteIds = new Set();
 
         // Module-level constants
         const VAT_RATE = 0.1;           // 10% VAT
@@ -1824,11 +1894,6 @@
             const themeColor  = isNK ? '#003087' : (isHT ? '#005F60' : '#2d3748');
             const lightBg     = isNK ? '#EBF0FB' : (isHT ? '#E0F0EF' : '#f0f0f4');
             const companyName = isNK ? 'NEXTRON KOREA' : (isHT ? 'HUNTERLINK' : (fd.companyName || 'COMPANY').toUpperCase());
-            const companyInfo = isNK
-                ? 'Tel: 02-0000-0000 &nbsp;|&nbsp; E-mail: info@nextronkorea.com'
-                : (isHT
-                    ? 'Tel: +61-2-0000-0000 &nbsp;|&nbsp; E-mail: info@hunterlink.com.au'
-                    : '');
 
             const currency = fd.currency || 'KRW';
             const exchangeRate = fd.exchangeRate || 1500;
@@ -1869,10 +1934,9 @@
                 <tr><td style="color:#666;padding:2px 0;width:65px;">담당</td><td style="padding:2px 0;">${t(fd.senderName)}</td></tr>
                 <tr><td style="color:#666;padding:2px 0;">모바일</td><td style="padding:2px 0;">${t(fd.senderMobile)}</td></tr>` : '';
 
-            const signBlock = fd.senderName
-                ? `<div style="font-size:11px;margin-top:6px;">${t(fd.senderName)}</div>
-                ${fd.senderMobile ? `<div style="font-size:11px;margin-top:2px;">${t(fd.senderMobile)}</div>` : ''}`
-                : (fd.signName ? `<div style="font-size:11px;margin-top:6px;">${t(fd.signName)}</div>` : '');
+            const signBlock = (isNK || isHT)
+                ? `<div style="font-size:11px;margin-top:6px;">Jack Park</div>`
+                : (fd.senderName ? `<div style="font-size:11px;margin-top:6px;">${t(fd.senderName)}</div>` : '');
 
             return `<div style="width:794px;background:#fff;font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',Arial,sans-serif;padding:36px 40px;box-sizing:border-box;color:#111;line-height:1.4;">
 
@@ -1880,7 +1944,6 @@
                 <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:14px;border-bottom:3px solid ${themeColor};margin-bottom:22px;">
                     <div>
                         <div style="font-size:26px;font-weight:900;color:${themeColor};letter-spacing:2px;margin-bottom:4px;">${companyName}</div>
-                        <div style="font-size:10px;color:#666;">${companyInfo}</div>
                     </div>
                     <div style="font-size:30px;font-weight:700;color:${themeColor};letter-spacing:4px;">QUOTATION</div>
                 </div>
