@@ -1486,8 +1486,8 @@
                 const di = (d.items || [])[i] || {};
                 const displayUp = isUSD ? (item.sellingPricePerUnit / exchangeRateDefault) : item.sellingPricePerUnit;
                 const displayAmt = displayUp * item.quantity;
-                const upStr = isUSD ? `$ ${formatUSD(displayUp)}` : `&#x20A9; ${formatNumber(item.sellingPricePerUnit)}`;
-                const amtStr = isUSD ? `$ ${formatUSD(displayAmt)}` : `&#x20A9; ${formatNumber(item.sellingPricePerUnit * item.quantity)}`;
+                const upStr = isUSD ? `$ ${formatUSD(displayUp)}` : `&#x20A9; ${formatNumber(displayUp)}`;
+                const amtStr = isUSD ? `$ ${formatUSD(displayAmt)}` : `&#x20A9; ${formatNumber(displayAmt)}`;
                 return `<tr>
                     <td style="text-align:center;width:36px;">${i + 1}</td>
                     <td style="min-width:90px;">${escHtml(item.name)}</td>
@@ -1631,7 +1631,7 @@
             document.querySelectorAll('.inv-up-cell').forEach(cell => {
                 const upKRW = parseFloat(cell.dataset.up) || 0;
                 const displayUp = isUSD ? (upKRW / exchangeRate) : upKRW;
-                cell.textContent = isUSD ? `$ ${formatUSD(displayUp)}` : `\u20A9 ${formatNumber(upKRW)}`;
+                cell.textContent = isUSD ? `$ ${formatUSD(displayUp)}` : `₩ ${formatNumber(upKRW)}`;
             });
 
             let subtotal = 0;
@@ -1641,7 +1641,7 @@
                 const displayUp = isUSD ? (upKRW / exchangeRate) : upKRW;
                 const amount = displayUp * qty;
                 subtotal += amount;
-                cell.textContent = isUSD ? `$ ${formatUSD(amount)}` : `\u20A9 ${formatNumber(amount)}`;
+                cell.textContent = isUSD ? `$ ${formatUSD(amount)}` : `₩ ${formatNumber(amount)}`;
             });
 
             const vat = isUSD
@@ -1659,9 +1659,9 @@
                 if (vatEl) vatEl.textContent = `$ ${formatUSD(vat)}`;
                 if (totalEl) totalEl.textContent = `$ ${formatUSD(total)}`;
             } else {
-                if (subtotalEl) subtotalEl.textContent = `\u20A9 ${formatNumber(subtotal)}`;
-                if (vatEl) vatEl.textContent = `\u20A9 ${formatNumber(vat)}`;
-                if (totalEl) totalEl.textContent = `\u20A9 ${formatNumber(total)}`;
+                if (subtotalEl) subtotalEl.textContent = `₩ ${formatNumber(subtotal)}`;
+                if (vatEl) vatEl.textContent = `₩ ${formatNumber(vat)}`;
+                if (totalEl) totalEl.textContent = `₩ ${formatNumber(total)}`;
             }
         }
 
@@ -1869,9 +1869,10 @@
                 <tr><td style="color:#666;padding:2px 0;width:65px;">담당</td><td style="padding:2px 0;">${t(fd.senderName)}</td></tr>
                 <tr><td style="color:#666;padding:2px 0;">모바일</td><td style="padding:2px 0;">${t(fd.senderMobile)}</td></tr>` : '';
 
-            const signBlock = (fd.senderName || fd.signName) ? `
-                <div style="font-size:11px;margin-top:6px;">${t(fd.senderName || fd.signName)}</div>
-                ${fd.senderMobile ? `<div style="font-size:11px;margin-top:2px;">${t(fd.senderMobile)}</div>` : ''}` : '';
+            const signBlock = fd.senderName
+                ? `<div style="font-size:11px;margin-top:6px;">${t(fd.senderName)}</div>
+                ${fd.senderMobile ? `<div style="font-size:11px;margin-top:2px;">${t(fd.senderMobile)}</div>` : ''}`
+                : (fd.signName ? `<div style="font-size:11px;margin-top:6px;">${t(fd.signName)}</div>` : '');
 
             return `<div style="width:794px;background:#fff;font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',Arial,sans-serif;padding:36px 40px;box-sizing:border-box;color:#111;line-height:1.4;">
 
