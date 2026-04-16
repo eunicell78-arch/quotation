@@ -1945,8 +1945,10 @@
 
         function isInAppBrowser() {
             const ua = navigator.userAgent || '';
-            const inAppPattern = /(?:^|[^a-z0-9])(kakaotalk|naver|daum|instagram|fban|fbav|fbios|line|twitter|x\.com|wv)(?:$|[^a-z0-9])/i;
-            return inAppPattern.test(ua);
+            const lowerUA = ua.toLowerCase();
+            const inAppTokens = ['kakaotalk', 'naver', 'daum', 'instagram', 'fban', 'fbav', 'fbios', 'twitter', 'x.com'];
+            if (inAppTokens.some((token) => lowerUA.includes(token))) return true;
+            return /\bline\/|\bwv\b/i.test(ua);
         }
 
         async function sharePDFFile(blob, filename, options = {}) {
@@ -1979,13 +1981,6 @@
             try {
                 const newTab = window.open(url, '_blank');
                 opened = !!newTab;
-                if (opened) {
-                    try {
-                        opened = !newTab.closed;
-                    } catch (e) {
-                        opened = true;
-                    }
-                }
             } catch (e) {
                 console.warn('window.open failed:', e);
             }
