@@ -343,14 +343,30 @@
 
         .quote-card-summary {
             font-size: 0.9em;
-            line-height: 2;
+            line-height: 1.45;
             flex: 1;
+            min-width: 0;
         }
 
-        .quote-card-summary span {
-            display: inline-block;
-            margin-right: 12px;
+        .quote-summary-grid {
+            display: grid;
+            grid-template-columns: max-content minmax(0, 1fr);
+            column-gap: 10px;
+            row-gap: 4px;
+            align-items: start;
+        }
+
+        .quote-summary-label {
             color: #495057;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .quote-summary-value {
+            color: #495057;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .quote-card-summary strong {
@@ -391,6 +407,48 @@
             text-align: center;
             padding: 20px;
             font-style: italic;
+        }
+
+        @media (max-width: 420px) {
+            .quote-card {
+                padding: 12px;
+            }
+
+            .quote-card-header {
+                gap: 8px;
+                margin-bottom: 6px;
+            }
+
+            .quote-card-summary {
+                font-size: 0.84em;
+                line-height: 1.35;
+            }
+
+            .quote-summary-grid {
+                column-gap: 8px;
+                row-gap: 3px;
+            }
+
+            .quote-card-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+                gap: 6px;
+            }
+
+            .quote-card-actions .btn {
+                width: 100%;
+                padding: 7px 8px;
+                font-size: 0.8em;
+                white-space: normal;
+                line-height: 1.3;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .quote-card-actions {
+                grid-template-columns: 1fr;
+            }
         }
 
             .product-item {
@@ -1360,15 +1418,26 @@
                             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
                                 <input type="checkbox" class="quote-select-cb" data-id="${quote.id}" onchange="toggleQuoteSelection('${quote.id}', this.checked)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
                                 <div class="quote-card-summary">
-                                    <strong>${savedDate}</strong> &nbsp;|&nbsp;
-                                    <span>${quote.shippingMethod || '-'} ${quote.weightLabel || ''}</span>
-                                    <span>총운임 ${formatNumber(quote.totalFreight)}원</span>
-                                    <span>마진 ${quote.marginRate}%</span>
-                                    <span>환율 ${formatNumber(quote.exchangeRate)}원/$</span>
-                                    <span>배분: ${quote.allocationMethod}</span>
-                                    <span>품목 ${quote.items.length}개</span>
-                                    <span>총판매가 ${formatNumber(totalSelling)}원</span>
-                                    <span>총이익 ${formatNumber(totalProfit)}원</span>
+                                    <div class="quote-summary-grid">
+                                        <span class="quote-summary-label">저장일시</span>
+                                        <span class="quote-summary-value"><strong>${savedDate}</strong></span>
+                                        <span class="quote-summary-label">운송/무게</span>
+                                        <span class="quote-summary-value">${quote.shippingMethod || '-'} ${quote.weightLabel || ''}</span>
+                                        <span class="quote-summary-label">총운임</span>
+                                        <span class="quote-summary-value">${formatNumber(quote.totalFreight)}원</span>
+                                        <span class="quote-summary-label">마진율</span>
+                                        <span class="quote-summary-value">${quote.marginRate}%</span>
+                                        <span class="quote-summary-label">환율</span>
+                                        <span class="quote-summary-value">${formatNumber(quote.exchangeRate)}원/$</span>
+                                        <span class="quote-summary-label">배분방식</span>
+                                        <span class="quote-summary-value">${quote.allocationMethod}</span>
+                                        <span class="quote-summary-label">품목수</span>
+                                        <span class="quote-summary-value">${quote.items.length}개</span>
+                                        <span class="quote-summary-label">총판매가</span>
+                                        <span class="quote-summary-value">${formatNumber(totalSelling)}원</span>
+                                        <span class="quote-summary-label">총이익</span>
+                                        <span class="quote-summary-value">${formatNumber(totalProfit)}원</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="quote-card-actions">
