@@ -1994,8 +1994,13 @@
                 }
             }
 
+            if (!opened) {
+                URL.revokeObjectURL(url);
+                return false;
+            }
+
             setTimeout(() => URL.revokeObjectURL(url), BLOB_REVOKE_DELAY_VIEWER_MS);
-            return opened;
+            return true;
         }
 
         async function savePDFWithGuidance(blob, filename, action) {
