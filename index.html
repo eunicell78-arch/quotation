@@ -1946,7 +1946,7 @@
         function isInAppBrowser() {
             const ua = navigator.userAgent || '';
             const lowerUA = ua.toLowerCase();
-            const inAppTokens = ['kakaotalk', 'naver', 'daum', 'instagram', 'fban', 'fbav', 'fbios', 'twitter', 'x.com'];
+            const inAppTokens = ['kakaotalk', 'naver', 'daum', 'instagram', 'fban', 'fbav', 'fbios', 'twitter'];
             if (inAppTokens.some((token) => lowerUA.includes(token))) return true;
             return /\bline\/|\bwv\b/i.test(ua);
         }
@@ -1971,8 +1971,8 @@
             return 'downloaded';
         }
 
-        const BLOB_REVOKE_DELAY_DOWNLOAD_MS = 5000; // shorter delay for download handoff to browser download manager
-        const BLOB_REVOKE_DELAY_VIEWER_MS = 15000; // longer delay for in-app/new-tab PDF viewer initialization
+        const DOWNLOAD_HANDOFF_DELAY_MS = 5000; // delay for browser download manager handoff in mobile/in-app environments
+        const VIEWER_INIT_DELAY_MS = 15000; // longer delay for in-app/new-tab PDF viewer initialization
 
         function openPDFInNewTab(blob) {
             const url = URL.createObjectURL(blob);
@@ -1999,7 +1999,7 @@
                 return false;
             }
 
-            setTimeout(() => URL.revokeObjectURL(url), BLOB_REVOKE_DELAY_VIEWER_MS);
+            setTimeout(() => URL.revokeObjectURL(url), VIEWER_INIT_DELAY_MS);
             return true;
         }
 
@@ -2045,7 +2045,7 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), BLOB_REVOKE_DELAY_DOWNLOAD_MS);
+            setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_HANDOFF_DELAY_MS);
         }
 
         function buildA4TemplateHTML(fd, subtotal, vat, total) {
