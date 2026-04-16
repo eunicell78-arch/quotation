@@ -1978,7 +1978,14 @@
 
             try {
                 const newTab = window.open(url, '_blank');
-                opened = !!(newTab && !newTab.closed);
+                opened = !!newTab;
+                if (opened) {
+                    try {
+                        opened = !newTab.closed;
+                    } catch (e) {
+                        opened = true;
+                    }
+                }
             } catch (e) {
                 console.warn('window.open failed:', e);
             }
