@@ -1969,7 +1969,7 @@
         }
 
         function openPDFInNewTab(blob) {
-            const OPEN_REVOKE_DELAY_MS = 15000; // keep URL alive long enough for viewer load in mobile/in-app browsers
+            const OPEN_REVOKE_DELAY_MS = 15000; // 15s: enough for slower in-app PDF viewers to load while limiting blob URL lifetime
             const url = URL.createObjectURL(blob);
             let opened = false;
 
@@ -1994,9 +1994,9 @@
         }
 
         async function savePDFWithGuidance(blob, filename, action) {
-            const inAppGuideMessage = "인앱 브라우저에서는 공유/다운로드가 제한될 수 있어요.\n메뉴에서 'Chrome에서 열기'로 다시 시도해 주세요.";
+            const inAppGuideMessage = "인앱 브라우저에서는 공유/다운로드가 제한될 수 있어요.\n메뉴에서 '외부 브라우저에서 열기(예: Chrome에서 열기)'로 다시 시도해 주세요.";
             const shareGuideMessage = "공유/저장 창이 열렸습니다. '파일에 저장' 또는 Drive 등에 저장하세요.";
-            const shareFallbackGuideMessage = "공유를 직접 열 수 없는 환경입니다.\nPDF를 새 탭으로 열거나 다운로드를 시작할게요.\n열린 PDF 화면에서 시스템 공유(카카오톡 전송)를 사용해 주세요.";
+            const shareFallbackGuideMessage = "공유를 직접 열 수 없는 환경입니다.\n먼저 PDF를 새 탭으로 열고, 차단되면 다운로드를 시작할게요.\n열린 PDF 화면에서 시스템 공유(카카오톡 전송)를 사용해 주세요.";
             const inApp = isInAppBrowser();
 
             if (action === 'share' && inApp) {
