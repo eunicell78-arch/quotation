@@ -1934,11 +1934,7 @@
                 document.body.removeChild(captureEl);
                 captureEl = null;
 
-                if (action === 'share') {
-                    await sharePDFFile(blob, filename);
-                } else {
-                    downloadPDFFile(blob, filename);
-                }
+                await savePDFWithGuidance(blob, filename, action);
             } catch (err) {
                 console.error('PDF generation error:', err);
                 if (document.body.contains(overlay)) document.body.removeChild(overlay);
@@ -1947,18 +1943,53 @@
             }
         }
 
-        async function sharePDFFile(blob, filename) {
+        function isInAppBrowser() {
+            const ua = navigator.userAgent || '';
+            return /KAKAOTALK|NAVER|Daum|Instagram|FBAN|FBAV|FBIOS|Line\/|Twitter|X\/|wv/i.test(ua);
+        }
+
+        async function sharePDFFile(blob, filename, options = {}) {
+            const { fallbackToDownload = true } = options;
             const file = new File([blob], filename, { type: 'application/pdf' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({ files: [file], title: filename });
-                    return;
+                    return 'shared';
                 } catch (e) {
-                    if (e.name === 'AbortError') return;
+                    if (e.name === 'AbortError') return 'aborted';
                     console.warn('Share API failed, falling back to download:', e);
+                    if (!fallbackToDownload) return 'failed';
                 }
+            } else if (!fallbackToDownload) {
+                return 'unavailable';
             }
+
             downloadPDFFile(blob, filename);
+            return 'downloaded';
+        }
+
+        async function savePDFWithGuidance(blob, filename, action) {
+            const inApp = isInAppBrowser();
+            if (inApp) {
+                alert('현재 앱 내 브라우저에서는 다운로드한 파일이 보이지 않을 수 있습니다.\n브라우저 다운로드 목록을 확인하거나 Chrome에서 열어 저장해 주세요.');
+            }
+
+            const shouldTryShareFirst = action === 'share' || inApp;
+            if (shouldTryShareFirst) {
+                const shareResult = await sharePDFFile(blob, filename, { fallbackToDownload: false });
+                if (shareResult === 'shared') {
+                    alert("공유/저장 창이 열렸습니다. '파일에 저장' 또는 Drive 등에 저장하세요.");
+                    return;
+                }
+                if (shareResult === 'aborted') return;
+            }
+
+            downloadPDFFile(blob, filename);
+            let downloadGuide = '다운로드가 시작되었습니다. Chrome 메뉴 > 다운로드에서 확인하세요.';
+            if (inApp) {
+                downloadGuide += '\n앱 내 브라우저에서는 브라우저 다운로드 목록에서 확인하거나 Chrome에서 열어 다시 저장해 주세요.';
+            }
+            alert(downloadGuide);
         }
 
         function downloadPDFFile(blob, filename) {
