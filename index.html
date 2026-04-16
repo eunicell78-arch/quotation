@@ -1969,13 +1969,13 @@
         }
 
         function openPDFInNewTab(blob) {
-            const OPEN_REVOKE_DELAY_MS = 60000;
+            const OPEN_REVOKE_DELAY_MS = 15000; // keep URL alive long enough for viewer load in mobile/in-app browsers
             const url = URL.createObjectURL(blob);
             let opened = false;
 
             try {
                 const newTab = window.open(url, '_blank');
-                opened = !!newTab;
+                opened = !!(newTab && !newTab.closed);
             } catch (e) {
                 console.warn('window.open failed:', e);
             }
@@ -2015,9 +2015,6 @@
                 alert(shareFallbackGuideMessage);
                 const openedInViewer = openPDFInNewTab(blob);
                 if (openedInViewer) {
-                    if (inApp) {
-                        alert("인앱 브라우저에서는 전송이 막힐 수 있어요.\n필요하면 메뉴에서 'Chrome에서 열기' 후 다시 공유해 주세요.");
-                    }
                     return;
                 }
             }
