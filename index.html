@@ -658,11 +658,13 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(232, 62, 140, 0.4);
         }
-        .btn-pdf-download {
+        .btn-pdf-download,
+        .btn-word-download {
             background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
             color: white;
         }
-        .btn-pdf-download:hover {
+        .btn-pdf-download:hover,
+        .btn-word-download:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
         }
@@ -1733,7 +1735,7 @@
                     <button class="btn btn-confirm" onclick="confirmInvoice()">✔ 확정 (저장)</button>
                     <button class="btn btn-pdf-share" onclick="generateInvoicePDF('share')">📤 PDF 공유</button>
                     <button class="btn btn-pdf-download" onclick="generateInvoicePDF('download')">⬇ PDF 다운로드</button>
-                    <button class="btn btn-word-download btn-pdf-download" onclick="downloadInvoiceWord()">📝 WORD 다운로드</button>
+                    <button class="btn btn-word-download" onclick="downloadInvoiceWord()">📝 WORD 다운로드</button>
                 </div>
             </div>`;
         }
@@ -1911,7 +1913,7 @@ ${bodyHTML}
 
             const { subtotal, vat, total } = calculateInvoiceTotals(fd);
             const wordHTML = buildWordDocumentHTML(buildA4TemplateHTML(fd, subtotal, vat, total));
-            const blob = new Blob(['\uFEFF', wordHTML], { type: 'application/msword;charset=utf-8' });
+            const blob = new Blob(['\uFEFF', wordHTML], { type: 'text/html;charset=utf-8' });
             const filename = `견적서_${fd.quoteNo || 'QUOTE'}.doc`;
 
             downloadFile(blob, filename);
