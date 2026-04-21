@@ -658,11 +658,13 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(232, 62, 140, 0.4);
         }
-        .btn-pdf-download {
+        .btn-pdf-download,
+        .btn-word-download {
             background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
             color: white;
         }
-        .btn-pdf-download:hover {
+        .btn-pdf-download:hover,
+        .btn-word-download:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
         }
@@ -1733,6 +1735,7 @@
                     <button class="btn btn-confirm" onclick="confirmInvoice()">✔ 확정 (저장)</button>
                     <button class="btn btn-pdf-share" onclick="generateInvoicePDF('share')">📤 PDF 공유</button>
                     <button class="btn btn-pdf-download" onclick="generateInvoicePDF('download')">⬇ PDF 다운로드</button>
+                    <button class="btn btn-word-download" onclick="downloadInvoiceWord()">📝 WORD 다운로드</button>
                 </div>
             </div>`;
         }
@@ -1868,18 +1871,7 @@
             }));
         }
 
-        async function generateInvoicePDF(action) {
-            if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-                alert('PDF 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
-                return;
-            }
-            const fd = collectInvoiceFormData();
-            if (!fd) return;
-
-            // Named constants for PDF generation parameters
-            const DOM_SETTLE_MS = 400;     // wait for browser to fully lay out the off-screen template
-            const PDF_IMG_QUALITY = 0.92;  // JPEG quality: 0–1; 0.92 balances size vs. clarity
-
+        function calculateInvoiceTotals(fd) {
             const currency = fd.currency || 'KRW';
             const exchangeRate = fd.exchangeRate || 1500;
             const isUSD = currency === 'USD';
@@ -1894,6 +1886,52 @@
                 vat = Math.round(subtotal * VAT_RATE);
                 total = subtotal + vat;
             }
+
+            return { subtotal, vat, total };
+        }
+
+        function buildWordDocumentHTML(bodyHTML) {
+            return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>견적서</title>
+<style>
+body { margin: 0; padding: 0; background: #fff; }
+</style>
+</head>
+<body>
+${bodyHTML}
+</body>
+</html>`;
+        }
+
+        function downloadInvoiceWord() {
+            const fd = collectInvoiceFormData();
+            if (!fd) return;
+
+            const { subtotal, vat, total } = calculateInvoiceTotals(fd);
+            const wordHTML = buildWordDocumentHTML(buildA4TemplateHTML(fd, subtotal, vat, total));
+            const blob = new Blob(['\uFEFF', wordHTML], { type: 'text/html;charset=utf-8' });
+            const filename = `견적서_${fd.quoteNo || 'QUOTE'}.doc`;
+
+            downloadFile(blob, filename);
+        }
+
+        async function generateInvoicePDF(action) {
+            if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                alert('PDF 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            const fd = collectInvoiceFormData();
+            if (!fd) return;
+
+            // Named constants for PDF generation parameters
+            const DOM_SETTLE_MS = 400;     // wait for browser to fully lay out the off-screen template
+            const PDF_IMG_QUALITY = 0.92;  // JPEG quality: 0–1; 0.92 balances size vs. clarity
+
+            const { subtotal, vat, total } = calculateInvoiceTotals(fd);
 
             const overlay = document.createElement('div');
             overlay.className = 'pdf-loading';
@@ -1967,7 +2005,7 @@
                 return 'unavailable';
             }
 
-            downloadPDFFile(blob, filename);
+            downloadFile(blob, filename);
             return 'downloaded';
         }
 
@@ -2029,7 +2067,7 @@
                 }
             }
 
-            downloadPDFFile(blob, filename);
+            downloadFile(blob, filename);
             let downloadGuide = '다운로드가 시작되었습니다. Chrome 메뉴 > 다운로드에서 확인하세요.';
             if (inApp) {
                 downloadGuide += '\n앱 내 브라우저에서는 브라우저 다운로드 목록에서 확인하거나 Chrome에서 열어 다시 저장해 주세요.';
@@ -2037,7 +2075,7 @@
             alert(downloadGuide);
         }
 
-        function downloadPDFFile(blob, filename) {
+        function downloadFile(blob, filename) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
